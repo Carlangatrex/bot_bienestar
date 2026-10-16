@@ -3,8 +3,30 @@ const crypto = require('crypto');
 
 const norm = (e) => String(e || '').trim().toLowerCase();
 
-// Base de datos: Redis por REST (Upstash / Vercel KV). Usa el nombre de variables que te dé tu proveedor.
+// Base de datos: Redis por REST (Upstash / Vercel KV).
+// Si no hay URL configurada, usa memoria RAM (solo para pruebas, se reinicia en cada despliegue).
+const memoryDB = new Map();
+const hasRedis = Boolean(process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL);
+
 async function redis(cmd) {
+  if (!hasRedis) {
+    const [op, key, ...rest] = cmd;
+    if (op === 'SET') {
+      memoryDB.set(key, rest[0]);
+      return 'OK';
+    }
+    if (op === 'GET') return memoryDB.get(key) || null;
+    if (op === 'DEL') { memoryDB.delete(key); return 1; }
+    if (op === 'INCR') {
+      const current = Number(memoryDB.get(key) || 0);
+      const next = current + 1;
+      memoryDB.set(key, String(next));
+      return next;
+    }
+    if (op === 'EXPIRE' || op === 'PEXPIREAT' || op === 'NX') return true;
+    return null;
+  }
+
   const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
   const r = await fetch(url, {
@@ -46,4 +68,4 @@ async function isActive(email) {
   return (await redis(['GET', `sub:${email}`])) === 'active';
 }
 
-module.exports = { redis, norm, sign, verify, isActive };
+module.exports = { redis, norm, sign, verify, isActive, memoryDB };
