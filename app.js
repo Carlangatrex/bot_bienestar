@@ -1,225 +1,241 @@
-// El frontend NO sabe qué proveedor de IA se usa: solo habla con /api/chat.
-const API_URL = '/api/chat';
-const STORAGE_KEY = 'acompanante_historial';
-const GREETING = 'Hola 🙂 Soy tu acompañante digital (una IA, no una persona ni un profesional de salud). ¿Cómo va tu día? Cuéntame lo que quieras, aquí te escucho.';
-
 const chat = document.getElementById('chat');
-const form = document.getElementById('form');
 const input = document.getElementById('input');
-const sendBtn = document.getElementById('send');
+const enviar = document.getElementById('enviar');
+const dlg = document.getElementById('ayuda');
+const colas = {};
+const MAX_TURNOS = 5;
+let turnos = 0;
 
-// Líneas de ayuda verificadas. Para agregar un país, copia un bloque y revisa el número en la fuente oficial.
-const AYUDA = [
-  { pais: 'México', lineas: [['Línea de la Vida (24 h, gratuita)', '800 911 2000'], ['Emergencias', '911']] },
-  { pais: 'España', lineas: [['Línea 024, conducta suicida (24 h, gratuita)', '024'], ['Emergencias', '112']] },
-  { pais: 'Colombia', lineas: [['Línea 106, salud mental (24 h, gratuita)', '106'], ['Emergencias', '123']] },
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text) e.textContent = text;
+  return e;
+}
+
+function scroll() { chat.scrollTop = chat.scrollHeight; }
+
+function siguiente(est) {
+  if (!colas[est.id] || !colas[est.id].length) {
+    colas[est.id] = [...est.mensajes].sort(() => Math.random() - 0.5);
+  }
+  return colas[est.id].pop();
+}
+
+function mensajeBot(texto, est) {
+  const b = el('div', 'msg bot');
+  if (est) b.style.setProperty('--c', est.color);
+  b.append(el('div', '', texto));
+  chat.appendChild(b);
+  scroll();
+}
+
+function mensajeUsuario(texto) {
+  chat.appendChild(el('div', 'msg usuario', texto));
+  scroll();
+}
+
+function respuestaHumana(est) {
+  const base = siguiente(est);
+  const abre = EMPATIA[est.id] || ['Te entiendo.'];
+  const opener = abre[Math.floor(Math.random() * abre.length)];
+  if (opener.endsWith('que ')) {
+    const propios = ['Dios', 'Jesús', 'Señor'];
+    const palabra = base.split(' ')[0];
+    const ajuste = propios.includes(palabra) ? base : base.charAt(0).toLowerCase() + base.slice(1);
+    return opener + ajuste;
+  }
+  return opener + base;
+}
+
+function responder(est) {
+  mensajeBot(respuestaHumana(est), est);
+
+  if (est.ayuda) {
+    const acciones = el('div', 'acciones');
+    const a = el('button', 'link', '¿Necesitas hablar con alguien? Ver líneas de ayuda');
+    a.type = 'button';
+    a.addEventListener('click', () => dlg.showModal());
+    acciones.appendChild(a);
+    chat.appendChild(acciones);
+    scroll();
+  }
+}
+
+function coincideExacto(texto, palabra) {
+  const p = palabra.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?<![\\p{L}\\p{N}])${p}(?![\\p{L}\\p{N}])`, 'iu').test(texto);
+}
+
+function normalizar(texto) {
+  return texto.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function distancia(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 1; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const costo = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + costo);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + 1);
+      }
+    }
+  }
+  return dp[m][n];
+}
+
+function coincideFlexible(texto, palabra) {
+  const pal = normalizar(palabra).replace(/\s/g, '');
+  if (pal.length < 5) return false;
+  const norm = normalizar(texto);
+  if (norm.replace(/\s/g, '').includes(pal)) return true;
+  const umbral = pal.length >= 8 ? 2 : 1;
+  return norm.split(' ').some(tok => tok.length > 0 && Math.abs(tok.length - pal.length) <= 1 && distancia(tok, pal) <= umbral);
+}
+
+function coincide(texto, palabra) {
+  return coincideExacto(texto, palabra) || coincideFlexible(texto, palabra);
+}
+
+const PATRONES = [
+  ['mal', ['mal', 'me siento mal', 'estoy mal', 'muy mal', 'malísimo', 'malisimo', 'horrible', 'terrible', 'pésimo', 'pesimo', 'desesperado', 'desesperada', 'peor', 'fatal', 'no me siento bien']],
+  ['bien', ['bien', 'me siento bien', 'estoy bien', 'muy bien', 'tranquilo', 'tranquila', 'normal', 'genial', 'excelente', 'maravilloso', 'maravillosa', 'fantástico', 'fantastico', 'fantástica', 'fantastica', 'despreocupado', 'despreocupada', 'satisfecho', 'satisfecha']],
+  ['alegre', ['alegre', 'alegría', 'alegria', 'feliz', 'contento', 'contenta', 'radiante']],
+  ['cansancio', ['cansado', 'cansada', 'sueño', 'soñoliento', 'soñolienta', 'agotado', 'agotada', 'fatiga', 'dormido', 'dormida', 'exhausto', 'exhausta']],
+  ['estres', ['estrés', 'estres', 'ansiedad', 'presión', 'presion', 'urgente', 'agobiado', 'agobiada', 'agobio', 'estresado', 'estresada', 'tenso', 'tensa', 'nervioso', 'nerviosa', 'intranquilo', 'intranquila']],
+  ['triste', ['triste', 'tristeza', 'deprimido', 'deprimida', 'llorar', 'vacío', 'vacio', 'vacía', 'vacia', 'melancólico', 'melancolico', 'melancólica', 'melancolica', 'decaído', 'decaido', 'decaída', 'decaida', 'infeliz', 'desanimado', 'desanimada', 'desanimo', 'desánimo', 'apenado', 'apenada', 'descontento', 'descontenta', 'desdichado', 'desdichada']],
+  ['agradecimiento', ['gracias', 'agradecido', 'agradecida', 'agradecimiento']],
+  ['motivacion', ['motivación', 'motivacion', 'motivado', 'motivada', 'ánimo', 'animo', 'ánimos', 'animos', 'fuerza', 'adelante', 'empezar']],
+  ['enojo', ['enojo', 'enojado', 'enojada', 'ira', 'rabioso', 'rabiosa', 'enojarse', 'enfadado', 'enfadada', 'furioso', 'furiosa', 'molesto', 'molesta', 'harto', 'harta', 'irritado', 'irritada']],
+  ['preocupacion', ['preocupación', 'preocupacion', 'preocupado', 'preocupada', 'miedo', 'inquieto', 'inquieta', 'inquietud', 'ansioso', 'ansiosa', 'temor', 'temo', 'temer']],
+  ['soledad', ['soledad', 'solo', 'sola', 'solitario', 'solitaria', 'aislado', 'aislada', 'abandonado', 'abandonada']],
+  ['confusion', ['confusión', 'confusion', 'confundido', 'confundida', 'no sé', 'no se', 'duda', 'dudas', 'dudo', 'dudar', 'perdido', 'perdida', 'no entiendo']],
+  ['esperanza', ['esperanza', 'futuro', 'mañana', 'mejorará', 'mejorara', 'superar', 'renacer', 'nuevo comienzo']],
 ];
-const AYUDA_MAS = 'https://findahelpline.com/es-419';
+
+function detectarEstado(texto) {
+  for (const [id, palabras] of PATRONES) {
+    if (palabras.some(p => coincideExacto(texto, p))) {
+      return ESTADOS.find(e => e.id === id);
+    }
+  }
+  for (const [id, palabras] of PATRONES) {
+    if (palabras.some(p => coincideFlexible(texto, p))) {
+      return ESTADOS.find(e => e.id === id);
+    }
+  }
+  return null;
+}
+
+function detectarConversacion(texto) {
+  for (const c of CONVERSACION) {
+    if (c.patrones.some(p => coincide(texto, p))) {
+      return c.respuestas[Math.floor(Math.random() * c.respuestas.length)];
+    }
+  }
+  return null;
+}
+
+function iniciar() {
+  turnos = 0;
+  input.disabled = false;
+  enviar.disabled = false;
+  chat.replaceChildren();
+  mensajeBot('Hola, ¿cómo te sientes hoy?');
+}
+
+function indicador() {
+  const b = el('div', 'msg bot escribiendo');
+  for (let i = 0; i < 3; i++) b.appendChild(el('span', 'punto'));
+  chat.appendChild(b);
+  scroll();
+  return b;
+}
+
+function enviarMensaje() {
+  const texto = input.value.trim();
+  if (!texto) return;
+  turnos++;
+  mensajeUsuario(texto);
+  input.value = '';
+  const est = detectarEstado(texto);
+  const conv = est ? null : detectarConversacion(texto);
+  const noEntiendo = NO_ENTIENDO[Math.floor(Math.random() * NO_ENTIENDO.length)];
+  input.disabled = true;
+  const ind = indicador();
+  setTimeout(() => {
+    ind.remove();
+    if (est) {
+      responder(est);
+    } else if (conv) {
+      mensajeBot(conv);
+    } else {
+      mensajeBot(noEntiendo);
+    }
+    if (turnos >= MAX_TURNOS) {
+      finalizar();
+    } else {
+      input.disabled = false;
+      input.focus();
+    }
+  }, 900 + Math.random() * 700);
+}
+
+function finalizar() {
+  chat.querySelectorAll('.acciones').forEach(n => n.remove());
+  mensajeBot(MENSAJE_FINAL);
+
+  const acciones = el('div', 'acciones');
+  const reiniciar = el('button', 'btn primario', 'Volver a empezar');
+  reiniciar.type = 'button';
+  reiniciar.addEventListener('click', () => { chat.replaceChildren(); iniciar(); });
+  acciones.appendChild(reiniciar);
+
+  const a = el('button', 'link', '¿Necesitas hablar con alguien? Ver líneas de ayuda');
+  a.type = 'button';
+  a.addEventListener('click', () => dlg.showModal());
+  acciones.appendChild(a);
+  chat.appendChild(acciones);
+  scroll();
+
+  input.disabled = true;
+  enviar.disabled = true;
+}
+
+enviar.addEventListener('click', enviarMensaje);
+input.addEventListener('keydown', (e) => { if (e.key === 'Enter') enviarMensaje(); });
 
 function ayudaNode() {
   const box = document.createElement('div');
   AYUDA.forEach((c) => {
-    const t = document.createElement('div');
-    t.className = 'pais';
-    t.textContent = c.pais;
-    box.appendChild(t);
+    box.appendChild(el('div', 'pais', c.pais));
     c.lineas.forEach(([nombre, num]) => {
-      const a = document.createElement('a');
-      a.className = 'tel';
+      const a = el('a', '', `${nombre}: ${num}`);
       a.href = 'tel:' + num.replace(/\s/g, '');
-      a.textContent = `${nombre}: ${num}`;
       box.appendChild(a);
     });
   });
-  const mas = document.createElement('a');
-  mas.className = 'tel';
+  const mas = el('a', '', '¿Otro país? Busca tu línea aquí');
   mas.href = AYUDA_MAS;
   mas.target = '_blank';
   mas.rel = 'noopener';
-  mas.textContent = '¿Otro país? Busca tu línea aquí';
   box.appendChild(mas);
   return box;
 }
 
-function helpBubble() {
-  const el = document.createElement('div');
-  el.className = 'msg bot';
-  const t = document.createElement('div');
-  t.textContent = 'Si quieres hablar con alguien ahora mismo, estas líneas son gratuitas:';
-  el.append(t, ayudaNode());
-  chat.appendChild(el);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-const TOKEN_KEY = 'acompanante_token';
-const loginEl = document.getElementById('login');
-const loginForm = document.getElementById('loginForm');
-const loginMsg = document.getElementById('loginMsg');
-const loginBtn = document.getElementById('loginBtn');
-
-let history = load();
-let token = null;
-try { token = localStorage.getItem(TOKEN_KEY); } catch {}
-
-function showLogin(msg = '') {
-  loginEl.hidden = false;
-  chat.hidden = true;
-  form.hidden = true;
-  loginMsg.textContent = msg;
-  loginForm.hidden = false;
-  document.getElementById('codeForm').hidden = true;
-}
-function showChat() {
-  loginEl.hidden = true;
-  chat.hidden = false;
-  form.hidden = false;
-  render();
-}
-
-function load() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
-}
-function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(-40))); } catch {}
-}
-
-function bubble(role, text) {
-  const el = document.createElement('div');
-  el.className = 'msg ' + (role === 'user' ? 'me' : 'bot');
-  el.textContent = text;
-  chat.appendChild(el);
-  chat.scrollTop = chat.scrollHeight;
-  return el;
-}
-
-function render() {
-  chat.innerHTML = '';
-  bubble('assistant', GREETING);
-  history.forEach((m) => bubble(m.role, m.content));
-}
-
-async function send(text) {
-  history.push({ role: 'user', content: text });
-  bubble('user', text);
-  save();
-
-  sendBtn.disabled = true;
-  const typing = bubble('assistant', 'Escribiendo…');
-  typing.classList.add('typing');
-
-  try {
-    const r = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ messages: history.slice(-20) }),
-    });
-    const d = await r.json();
-    if (r.status === 401) {
-      try { localStorage.removeItem(TOKEN_KEY); } catch {}
-      token = null;
-      history.pop();
-      save();
-      showLogin('Tu acceso ya no está activo. Entra de nuevo con tu correo de suscripción.');
-      return;
-    }
-    if (r.status === 429) { const lim = new Error(d.error); lim.friendly = true; throw lim; }
-    if (!r.ok || !d.reply) throw new Error(d.error || 'Error');
-    typing.remove();
-    history.push({ role: 'assistant', content: d.reply });
-    bubble('assistant', d.reply);
-    if (d.crisis) helpBubble();
-    save();
-  } catch (e) {
-    typing.classList.remove('typing');
-    typing.textContent = e.friendly ? e.message : 'No pude responder ahora. Inténtalo de nuevo en un momento.';
-    history.pop(); // permite reintentar sin romper la alternancia de roles
-    save();
-  } finally {
-    sendBtn.disabled = false;
-    input.focus();
-  }
-}
-
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const text = input.value.trim();
-  if (!text || sendBtn.disabled) return;
-  input.value = '';
-  input.style.height = 'auto';
-  send(text);
-});
-
-input.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
-});
-input.addEventListener('input', () => {
-  input.style.height = 'auto';
-  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-});
-
-const codeForm = document.getElementById('codeForm');
-const codeBtn = document.getElementById('codeBtn');
-let pendingEmail = '';
-
-async function post(url, body) {
-  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error || 'Algo falló. Inténtalo de nuevo.');
-  return d;
-}
-
-loginForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  loginBtn.disabled = true;
-  loginMsg.textContent = 'Enviando código…';
-  try {
-    pendingEmail = document.getElementById('email').value.trim();
-    await post('/api/login', { email: pendingEmail });
-    loginForm.hidden = true;
-    codeForm.hidden = false;
-    loginMsg.textContent = 'Si ese correo tiene una suscripción activa, te enviamos un código de 6 dígitos. Revisa también el spam.';
-    document.getElementById('code').focus();
-  } catch (err) {
-    loginMsg.textContent = err.message;
-  } finally {
-    loginBtn.disabled = false;
-  }
-});
-
-codeForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  codeBtn.disabled = true;
-  try {
-    const d = await post('/api/verify', { email: pendingEmail, code: document.getElementById('code').value });
-    token = d.token;
-    try { localStorage.setItem(TOKEN_KEY, token); } catch {}
-    showChat();
-  } catch (err) {
-    loginMsg.textContent = err.message;
-  } finally {
-    codeBtn.disabled = false;
-  }
-});
-
-const ayudaDlg = document.getElementById('ayuda');
 document.getElementById('ayudaLista').appendChild(ayudaNode());
-document.getElementById('ayudaBtn').addEventListener('click', () => ayudaDlg.showModal());
-document.getElementById('cerrar').addEventListener('click', () => ayudaDlg.close());
-document.getElementById('borrar').addEventListener('click', () => {
-  history = [];
-  try { localStorage.removeItem(STORAGE_KEY); } catch {}
-  ayudaDlg.close();
-  if (token) render();
-});
-document.getElementById('salir').addEventListener('click', () => {
-  history = [];
-  token = null;
-  try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(TOKEN_KEY); } catch {}
-  ayudaDlg.close();
-  showLogin();
-});
+document.getElementById('ayudaBtn').addEventListener('click', () => dlg.showModal());
+document.getElementById('cerrar').addEventListener('click', () => dlg.close());
 
-token ? showChat() : showLogin();
+iniciar();
+input.focus();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});

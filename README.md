@@ -1,20 +1,54 @@
 # Acompañante
 
-PWA de chat con IA para desahogarse y recibir un consejo práctico. Acceso por suscripción (Hotmart).
+PWA de acompañamiento emocional. Te pregunta cómo te sientes y te responde con
+un mensaje de apoyo; cuando aplica, te muestra líneas de ayuda. Funciona sin
+servidor: todo el contenido está en `contenido.js`.
+
+> **Aviso importante.** Acompañante no es un servicio médico, psicológico ni de
+> emergencias. No sustituye la atención profesional. Si estás en crisis, llama a
+> los servicios de emergencia de tu país o a una línea de ayuda. Revisa el
+> [aviso legal](LEGAL.md) y la [política de privacidad](PRIVACY.md).
+
+## Características
+
+- Chat sencillo: el bot pregunta cómo te sientes y responde con un mensaje.
+- Detección tolerante a errores de tipeo y faltas de tilde.
+- Frases de empatía por estado de ánimo.
+- Botón de ayuda con líneas de atención por país.
+- Funciona sin conexión (service worker).
+- Sin recopilación de datos: todo se procesa en tu dispositivo.
+
+## Cómo usar
+
+No necesitas instalar nada. Abre `index.html` en tu navegador o sirve la carpeta:
+
+```bash
+npx serve .
+```
+
+También puedes instalarla como app (PWA) desde el navegador.
 
 ## Estructura
-- `index.html`, `app.js`, `sw.js`, `manifest.json`, `icon-*.png`: la app (PWA)
-- `privacy.html`: privacidad y términos (borrador: completar y revisar con un abogado)
-- `api/chat.js`: conversación con la IA (elige proveedor con `PROVIDER`)
-- `api/_prompt.js`: instrucciones de tono del bot
-- `api/login.js`, `api/verify.js`: ingreso con código por correo
-- `api/hotmart.js`: webhook de Hotmart (altas, cancelaciones, gracia)
-- `api/_lib.js`: utilidades compartidas
-- `probar.js`: compara proveedores con mensajes de prueba
 
-## Despliegue (Vercel)
-1. Sube este repositorio a GitHub e impórtalo en Vercel.
-2. Agrega las variables de `.env.example` en *Settings → Environment Variables*.
-3. En Hotmart, registra el webhook `https://TU-APP.vercel.app/api/hotmart`.
+- `index.html`, `app.js`, `sw.js`, `manifest.json`, `icon-*.png`: la app.
+- `contenido.js`: **contenido editable** (estados, mensajes, empatía, ayuda).
+- `privacidad.html`: aviso legal y privacidad en versión web.
+- `LEGAL.md`, `PRIVACY.md`, `LICENSE`, `README.md`: documentación legal.
 
-Nunca subas el archivo `.env` con claves reales.
+## Personalizar el contenido
+
+Edita `contenido.js`:
+
+- `ESTADOS`: estados de ánimo, color y mensajes.
+- `EMPATIA`: frases que se agregan delante de cada mensaje.
+- `CONVERSACION`: respuestas para saludos y preguntas.
+- `AYUDA`: líneas de ayuda por país.
+- `MENSAJE_FINAL` y `NO_ENTIENDO`.
+
+## Contribuir
+
+Las contribuciones son bienvenidas. Abre un *issue* o un *pull request*.
+
+## Licencia
+
+Código bajo licencia [MIT](LICENSE).
