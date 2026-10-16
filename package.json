@@ -1,0 +1,6 @@
+{
+  "name": "acompanante",
+  "version": "1.0.0",
+  "description": "PWA de chat con IA para desahogarse y recibir consejos prácticos",
+  "main": "app.js"
+}
