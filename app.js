@@ -59,10 +59,6 @@ function iniciar() {
   input.focus();
 }
 
-let hablando = false;
-let vozSeleccionada = null;
-let vocesDisponibles = [];
-
 function cargarVoces() {
   vocesDisponibles = síntesis.getVoices();
   const preferidas = [
@@ -186,6 +182,55 @@ function toggleAyuda() { dlg.showModal(); }
 function cerrarAyuda() { dlg.close(); }
 
 // Inicialización
+if ('speechSynthesis' in window) {
+  síntesis = window.speechSynthesis;
+  síntesis.onvoiceschanged = cargarVoces;
+  cargarVoces();
+}
+
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  mic.style.display = 'flex';
+}
+
+if ('speechSynthesis' in window) {
+  speaker.style.display = 'flex';
+}
+
+enviar.addEventListener('click', enviarMensaje);
+input.addEventListener('keydown', e => { if (e.key === 'Enter') enviarMensaje(); });
+mic.addEventListener('click', enviarMensajeVoz);
+document.getElementById('speaker').addEventListener('click', () => {
+  const ultimos = chat.querySelectorAll('.msg.bot');
+  if (ultimos.length > 0) {
+    const ultimo = ultimos[ultimos.length - 1].textContent.trim();
+    if (ultimo) hablar(ultimo, arquetipoActual);
+  }
+});
+
+// Ayuda
+function ayudaNode() {
+  const box = document.createElement('div');
+  AYUDA.forEach(c => {
+    box.appendChild(el('div', 'pais', c.pais));
+    c.lineas.forEach(([nombre, num]) => {
+      const a = el('a', '', `${nombre}: ${num}`);
+      a.href = 'tel:' + num.replace(/\s/g, '');
+      box.appendChild(a);
+    });
+  });
+  const mas = el('a', '', '¿Otro país? Busca tu línea aquí');
+  mas.href = AYUDA_MAS;
+  mas.target = '_blank';
+  mas.rel = 'noopener';
+  box.appendChild(mas);
+  return box;
+}
+
+document.getElementById('ayudaLista').appendChild(ayudaNode());
+document.getElementById('ayudaBtn').addEventListener('click', () => dlg.showModal());
+document.getElementById('cerrar').addEventListener('click', () => dlg.close());
+
+// Variables globales (declaradas una sola vez al inicio)
 const chat = document.getElementById('chat');
 const input = document.getElementById('input');
 const enviar = document.getElementById('enviar');
@@ -246,10 +291,6 @@ function iniciar() {
   scroll();
   input.focus();
 }
-
-let hablando = false;
-let vozSeleccionada = null;
-let vocesDisponibles = [];
 
 function cargarVoces() {
   vocesDisponibles = síntesis.getVoices();
@@ -376,7 +417,8 @@ function cerrarAyuda() { dlg.close(); }
 // Inicialización
 if ('speechSynthesis' in window) {
   síntesis = window.speechSynthesis;
-  cargarVocesInicial();
+  síntesis.onvoiceschanged = cargarVoces;
+  cargarVoces();
 }
 
 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
