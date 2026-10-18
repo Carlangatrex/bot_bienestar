@@ -6,11 +6,10 @@ const repeatBtn = document.getElementById('repeat');
 const dlg = document.getElementById('ayuda');
 const colas = {};
 
-let arquetipoActual = null;
+let arquetipoActual = 'calido'; // Arquetipo por defecto
 let síntesis = window.speechSynthesis;
 let reconocimiento = null;
 let escuchando = false;
-let colasActividades = {};
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -51,28 +50,8 @@ function iniciar() {
   chat.replaceChildren();
   const bienvenida = el('div', 'msg bot');
   bienvenida.style.setProperty('--c', 'var(--bar)');
-  bienvenida.append(el('div', '', 'Hola. Soy tu acompañante. ¿Cómo quieres que te acompañe hoy?'));
+  bienvenida.append(el('div', '', 'Hola. Soy tu acompañante. ¿Cómo te sientes hoy?'));
   chat.appendChild(bienvenida);
-
-  const grid = el('div', 'arquetipos-grid');
-  ARQUETIPOS.forEach(a => {
-    const btn = el('button', 'arquetipo-btn');
-    btn.innerHTML = `<span class="arq-label">${a.label}</span><span class="arq-desc">${a.descripcion}</span>`;
-    btn.addEventListener('click', () => elegirArquetipo(a.id));
-    grid.appendChild(btn);
-  });
-  chat.appendChild(grid);
-  scroll();
-}
-
-function elegirArquetipo(id) {
-  arquetipoActual = id;
-  const a = ARQUETIPOS.find(a => a.id === id);
-  chat.replaceChildren();
-  const msg = el('div', 'msg bot');
-  msg.style.setProperty('--c', a.color || 'var(--bar)');
-  msg.append(el('div', '', `Perfecto. A partir de ahora te acompaño como ${a.label.toLowerCase()}. ¿Cómo te sientes hoy?`));
-  chat.appendChild(msg);
   scroll();
   input.focus();
 }
@@ -115,8 +94,7 @@ function iniciarReconocimiento() {
     const texto = e.results[0][0].transcript.trim();
     if (texto) {
       mensajeUsuario(texto);
-      const arquetipo = arquetipoActual || 'calido';
-      responder(arquetipo);
+      responder(arquetipoActual);
     }
   };
 
@@ -146,8 +124,7 @@ function enviarMensaje() {
   if (!texto) return;
   mensajeUsuario(texto);
   input.value = '';
-  const arquetipo = arquetipoActual || 'calido';
-  responder(arquetipo);
+  responder(arquetipoActual);
 }
 
 function enviarMensajeVoz() {
@@ -169,7 +146,7 @@ function cerrarAyuda() { dlg.close(); }
 // Inicialización
 if ('speechSynthesis' in window) {
   síntesis = window.speechSynthesis;
-  síntesis.getVoices(); // precargar
+  síntesis.getVoices();
   if (síntesis.onvoiceschanged !== undefined) síntesis.onvoiceschanged = () => síntesis.getVoices();
 }
 
