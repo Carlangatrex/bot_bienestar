@@ -21,10 +21,9 @@ function el(tag, cls, text) {
 
 function scroll() { chat.scrollTop = chat.scrollHeight; }
 
-function mensajeBot(texto, arquetipo, emoji) {
+function mensajeBot(texto, arquetipo) {
   const b = el('div', 'msg bot');
   if (arquetipo) b.style.setProperty('--c', ARQUETIPOS.find(a => a.id === arquetipo)?.color || 'var(--bar)');
-  if (emoji) b.append(el('span', 'emoji grande', emoji));
   b.append(el('div', '', texto));
   chat.appendChild(b);
   scroll();
@@ -43,57 +42,22 @@ function siguiente(arr, key) {
   return colas[key].pop();
 }
 
-function siguienteActividad(key) {
-  if (!colasActividades[key] || !colasActividades[key].length) {
-    colasActividades[key] = [...ACTIVIDADES].sort(() => Math.random() - 0.5);
-  }
-  return colasActividades[key].pop();
-}
-
-function responder(arquetipo, triggerActividad = false) {
+function responder(arquetipo) {
   const empatia = siguiente(EMPATIA[arquetipo] || EMPATIA.calido, 'empatia_' + arquetipo);
-  mensajeBot(empatia, arquetipo, ARQUETIPOS.find(a => a.id === arquetipo)?.emoji);
-
-  if (!triggerActividad) {
-    setTimeout(() => mostrarActividades(arquetipo), 800);
-  }
-}
-
-function mostrarActividades(arquetipo) {
-  const cont = el('div', 'actividades');
-  const titulo = el('h3', '', '¿Qué te apetece hacer ahora?');
-  cont.appendChild(titulo);
-
-  const grid = el('div', 'actividades-grid');
-  ACTIVIDADES.forEach(act => {
-    const btn = el('button', 'actividad-btn');
-    btn.innerHTML = `<span class="act-emoji">${act.emoji}</span><span class="act-label">${act.label}</span>`;
-    btn.title = act.descripcion;
-    btn.addEventListener('click', () => {
-      chat.removeChild(cont);
-      const texto = `Me gustaría ${act.label.toLowerCase()}.`;
-      mensajeUsuario(texto);
-      responder(arquetipo, true);
-    });
-    grid.appendChild(btn);
-  });
-  cont.appendChild(grid);
-  chat.appendChild(cont);
-  scroll();
+  mensajeBot(empatia, arquetipo);
 }
 
 function iniciar() {
   chat.replaceChildren();
   const bienvenida = el('div', 'msg bot');
   bienvenida.style.setProperty('--c', 'var(--bar)');
-  bienvenida.append(el('span', 'emoji grande', '👋'));
   bienvenida.append(el('div', '', 'Hola. Soy tu acompañante. ¿Cómo quieres que te acompañe hoy?'));
   chat.appendChild(bienvenida);
 
   const grid = el('div', 'arquetipos-grid');
   ARQUETIPOS.forEach(a => {
     const btn = el('button', 'arquetipo-btn');
-    btn.innerHTML = `<span class="arq-emoji">${a.emoji}</span><span class="arq-label">${a.label}</span><span class="arq-desc">${a.descripcion}</span>`;
+    btn.innerHTML = `<span class="arq-label">${a.label}</span><span class="arq-desc">${a.descripcion}</span>`;
     btn.addEventListener('click', () => elegirArquetipo(a.id));
     grid.appendChild(btn);
   });
@@ -107,8 +71,7 @@ function elegirArquetipo(id) {
   chat.replaceChildren();
   const msg = el('div', 'msg bot');
   msg.style.setProperty('--c', a.color || 'var(--bar)');
-  msg.append(el('span', 'emoji grande', a.emoji));
-  msg.append(el('div', '', `Perfecto. A partir de ahora te acompaño como **${a.label.toLowerCase()}**. ¿Cómo te sientes hoy?`));
+  msg.append(el('div', '', `Perfecto. A partir de ahora te acompaño como ${a.label.toLowerCase()}. ¿Cómo te sientes hoy?`));
   chat.appendChild(msg);
   scroll();
   input.focus();
@@ -132,7 +95,7 @@ function hablar(texto, arquetipo) {
 
 function iniciarReconocimiento() {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    mensajeBot('Tu navegador no soporta reconocimiento de voz.', null, '⚠️');
+    mensajeBot('Tu navegador no soporta reconocimiento de voz.', null);
     return;
   }
   if (escuchando) return;
@@ -145,7 +108,7 @@ function iniciarReconocimiento() {
   reconocimiento.onstart = () => {
     escuchando = true;
     mic.classList.add('escuchando');
-    mic.textContent = '🔴';
+    mic.textContent = 'Hablando...';
   };
 
   reconocimiento.onresult = (e) => {
@@ -159,13 +122,12 @@ function iniciarReconocimiento() {
 
   reconocimiento.onerror = (e) => {
     console.warn('Reconocimiento error:', e.error);
-    mensajeBot('No te escuché bien. Inténtalo de nuevo o escribe.', null, '🎤');
+    mensajeBot('No te escuché bien. Inténtalo de nuevo o escribe.', null);
   };
 
   reconocimiento.onend = () => {
     escuchando = false;
-    mic.classList.remove('escuchando');
-    mic.textContent = '🎤';
+    mic.textContent = 'Hablar';
   };
 
   reconocimiento.start();
