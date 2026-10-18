@@ -1,10 +1,16 @@
 const chat = document.getElementById('chat');
 const input = document.getElementById('input');
 const enviar = document.getElementById('enviar');
+const mic = document.getElementById('mic');
+const repeatBtn = document.getElementById('repeat');
 const dlg = document.getElementById('ayuda');
 const colas = {};
-const MAX_TURNOS = 5;
-let turnos = 0;
+
+let arquetipoActual = null;
+let síntesis = window.speechSynthesis;
+let reconocimiento = null;
+let escuchando = false;
+let colasActividades = {};
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -15,19 +21,14 @@ function el(tag, cls, text) {
 
 function scroll() { chat.scrollTop = chat.scrollHeight; }
 
-function siguiente(est) {
-  if (!colas[est.id] || !colas[est.id].length) {
-    colas[est.id] = [...est.mensajes].sort(() => Math.random() - 0.5);
-  }
-  return colas[est.id].pop();
-}
-
-function mensajeBot(texto, est) {
+function mensajeBot(texto, arquetipo, emoji) {
   const b = el('div', 'msg bot');
-  if (est) b.style.setProperty('--c', est.color);
+  if (arquetipo) b.style.setProperty('--c', ARQUETIPOS.find(a => a.id === arquetipo)?.color || 'var(--bar)');
+  if (emoji) b.append(el('span', 'emoji grande', emoji));
   b.append(el('div', '', texto));
   chat.appendChild(b);
   scroll();
+  if (síntesis && !hablando) hablar(texto, arquetipo);
 }
 
 function mensajeUsuario(texto) {
@@ -35,186 +36,195 @@ function mensajeUsuario(texto) {
   scroll();
 }
 
-function respuestaHumana(est) {
-  const base = siguiente(est);
-  const abre = EMPATIA[est.id] || ['Te entiendo.'];
-  const opener = abre[Math.floor(Math.random() * abre.length)];
-  if (opener.endsWith('que ')) {
-    const propios = ['Dios', 'Jesús', 'Señor'];
-    const palabra = base.split(' ')[0];
-    const ajuste = propios.includes(palabra) ? base : base.charAt(0).toLowerCase() + base.slice(1);
-    return opener + ajuste;
+function siguiente(arr, key) {
+  if (!colas[key] || !colas[key].length) {
+    colas[key] = [...arr].sort(() => Math.random() - 0.5);
   }
-  return opener + base;
+  return colas[key].pop();
 }
 
-function responder(est) {
-  mensajeBot(respuestaHumana(est), est);
+function siguienteActividad(key) {
+  if (!colasActividades[key] || !colasActividades[key].length) {
+    colasActividades[key] = [...ACTIVIDADES].sort(() => Math.random() - 0.5);
+  }
+  return colasActividades[key].pop();
+}
 
-  if (est.ayuda) {
-    const acciones = el('div', 'acciones');
-    const a = el('button', 'link', '¿Necesitas hablar con alguien? Ver líneas de ayuda');
-    a.type = 'button';
-    a.addEventListener('click', () => dlg.showModal());
-    acciones.appendChild(a);
-    chat.appendChild(acciones);
-    scroll();
+function responder(arquetipo, triggerActividad = false) {
+  const empatia = siguiente(EMPATIA[arquetipo] || EMPATIA.calido, 'empatia_' + arquetipo);
+  mensajeBot(empatia, arquetipo, ARQUETIPOS.find(a => a.id === arquetipo)?.emoji);
+
+  if (!triggerActividad) {
+    setTimeout(() => mostrarActividades(arquetipo), 800);
   }
 }
 
-function coincideExacto(texto, palabra) {
-  const p = palabra.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`(?<![\\p{L}\\p{N}])${p}(?![\\p{L}\\p{N}])`, 'iu').test(texto);
-}
+function mostrarActividades(arquetipo) {
+  const cont = el('div', 'actividades');
+  const titulo = el('h3', '', '¿Qué te apetece hacer ahora?');
+  cont.appendChild(titulo);
 
-function normalizar(texto) {
-  return texto.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function distancia(a, b) {
-  const m = a.length, n = b.length;
-  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
-  for (let j = 1; j <= n; j++) dp[0][j] = j;
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      const costo = a[i - 1] === b[j - 1] ? 0 : 1;
-      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + costo);
-      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
-        dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + 1);
-      }
-    }
-  }
-  return dp[m][n];
-}
-
-function coincideFlexible(texto, palabra) {
-  const pal = normalizar(palabra).replace(/\s/g, '');
-  if (pal.length < 5) return false;
-  const norm = normalizar(texto);
-  if (norm.replace(/\s/g, '').includes(pal)) return true;
-  const umbral = pal.length >= 8 ? 2 : 1;
-  return norm.split(' ').some(tok => tok.length > 0 && Math.abs(tok.length - pal.length) <= 1 && distancia(tok, pal) <= umbral);
-}
-
-function coincide(texto, palabra) {
-  return coincideExacto(texto, palabra) || coincideFlexible(texto, palabra);
-}
-
-const PATRONES = [
-  ['mal', ['mal', 'me siento mal', 'estoy mal', 'muy mal', 'malísimo', 'malisimo', 'horrible', 'terrible', 'pésimo', 'pesimo', 'desesperado', 'desesperada', 'peor', 'fatal', 'no me siento bien']],
-  ['bien', ['bien', 'me siento bien', 'estoy bien', 'muy bien', 'tranquilo', 'tranquila', 'normal', 'genial', 'excelente', 'maravilloso', 'maravillosa', 'fantástico', 'fantastico', 'fantástica', 'fantastica', 'despreocupado', 'despreocupada', 'satisfecho', 'satisfecha']],
-  ['alegre', ['alegre', 'alegría', 'alegria', 'feliz', 'contento', 'contenta', 'radiante']],
-  ['cansancio', ['cansado', 'cansada', 'sueño', 'soñoliento', 'soñolienta', 'agotado', 'agotada', 'fatiga', 'dormido', 'dormida', 'exhausto', 'exhausta']],
-  ['estres', ['estrés', 'estres', 'ansiedad', 'presión', 'presion', 'urgente', 'agobiado', 'agobiada', 'agobio', 'estresado', 'estresada', 'tenso', 'tensa', 'nervioso', 'nerviosa', 'intranquilo', 'intranquila']],
-  ['triste', ['triste', 'tristeza', 'deprimido', 'deprimida', 'llorar', 'vacío', 'vacio', 'vacía', 'vacia', 'melancólico', 'melancolico', 'melancólica', 'melancolica', 'decaído', 'decaido', 'decaída', 'decaida', 'infeliz', 'desanimado', 'desanimada', 'desanimo', 'desánimo', 'apenado', 'apenada', 'descontento', 'descontenta', 'desdichado', 'desdichada']],
-  ['agradecimiento', ['gracias', 'agradecido', 'agradecida', 'agradecimiento']],
-  ['motivacion', ['motivación', 'motivacion', 'motivado', 'motivada', 'ánimo', 'animo', 'ánimos', 'animos', 'fuerza', 'adelante', 'empezar']],
-  ['enojo', ['enojo', 'enojado', 'enojada', 'ira', 'rabioso', 'rabiosa', 'enojarse', 'enfadado', 'enfadada', 'furioso', 'furiosa', 'molesto', 'molesta', 'harto', 'harta', 'irritado', 'irritada']],
-  ['preocupacion', ['preocupación', 'preocupacion', 'preocupado', 'preocupada', 'miedo', 'inquieto', 'inquieta', 'inquietud', 'ansioso', 'ansiosa', 'temor', 'temo', 'temer']],
-  ['soledad', ['soledad', 'solo', 'sola', 'solitario', 'solitaria', 'aislado', 'aislada', 'abandonado', 'abandonada']],
-  ['confusion', ['confusión', 'confusion', 'confundido', 'confundida', 'no sé', 'no se', 'duda', 'dudas', 'dudo', 'dudar', 'perdido', 'perdida', 'no entiendo']],
-  ['esperanza', ['esperanza', 'futuro', 'mañana', 'mejorará', 'mejorara', 'superar', 'renacer', 'nuevo comienzo']],
-];
-
-function detectarEstado(texto) {
-  for (const [id, palabras] of PATRONES) {
-    if (palabras.some(p => coincideExacto(texto, p))) {
-      return ESTADOS.find(e => e.id === id);
-    }
-  }
-  for (const [id, palabras] of PATRONES) {
-    if (palabras.some(p => coincideFlexible(texto, p))) {
-      return ESTADOS.find(e => e.id === id);
-    }
-  }
-  return null;
-}
-
-function detectarConversacion(texto) {
-  for (const c of CONVERSACION) {
-    if (c.patrones.some(p => coincide(texto, p))) {
-      return c.respuestas[Math.floor(Math.random() * c.respuestas.length)];
-    }
-  }
-  return null;
+  const grid = el('div', 'actividades-grid');
+  ACTIVIDADES.forEach(act => {
+    const btn = el('button', 'actividad-btn');
+    btn.innerHTML = `<span class="act-emoji">${act.emoji}</span><span class="act-label">${act.label}</span>`;
+    btn.title = act.descripcion;
+    btn.addEventListener('click', () => {
+      chat.removeChild(cont);
+      const texto = `Me gustaría ${act.label.toLowerCase()}.`;
+      mensajeUsuario(texto);
+      responder(arquetipo, true);
+    });
+    grid.appendChild(btn);
+  });
+  cont.appendChild(grid);
+  chat.appendChild(cont);
+  scroll();
 }
 
 function iniciar() {
-  turnos = 0;
-  input.disabled = false;
-  enviar.disabled = false;
   chat.replaceChildren();
-  mensajeBot('Hola, ¿cómo te sientes hoy?');
+  const bienvenida = el('div', 'msg bot');
+  bienvenida.style.setProperty('--c', 'var(--bar)');
+  bienvenida.append(el('span', 'emoji grande', '👋'));
+  bienvenida.append(el('div', '', 'Hola. Soy tu acompañante. ¿Cómo quieres que te acompañe hoy?'));
+  chat.appendChild(bienvenida);
+
+  const grid = el('div', 'arquetipos-grid');
+  ARQUETIPOS.forEach(a => {
+    const btn = el('button', 'arquetipo-btn');
+    btn.innerHTML = `<span class="arq-emoji">${a.emoji}</span><span class="arq-label">${a.label}</span><span class="arq-desc">${a.descripcion}</span>`;
+    btn.addEventListener('click', () => elegirArquetipo(a.id));
+    grid.appendChild(btn);
+  });
+  chat.appendChild(grid);
+  scroll();
 }
 
-function indicador() {
-  const b = el('div', 'msg bot escribiendo');
-  for (let i = 0; i < 3; i++) b.appendChild(el('span', 'punto'));
-  chat.appendChild(b);
+function elegirArquetipo(id) {
+  arquetipoActual = id;
+  const a = ARQUETIPOS.find(a => a.id === id);
+  chat.replaceChildren();
+  const msg = el('div', 'msg bot');
+  msg.style.setProperty('--c', a.color || 'var(--bar)');
+  msg.append(el('span', 'emoji grande', a.emoji));
+  msg.append(el('div', '', `Perfecto. A partir de ahora te acompaño como **${a.label.toLowerCase()}**. ¿Cómo te sientes hoy?`));
+  chat.appendChild(msg);
   scroll();
-  return b;
+  input.focus();
+}
+
+let hablando = false;
+function hablar(texto, arquetipo) {
+  if (!síntesis) return;
+  if (hablando) síntesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(texto);
+  utterance.lang = 'es-ES';
+  utterance.rate = arquetipo === 'sensible' ? 0.85 : arquetipo === 'directivo' ? 1.1 : 1.0;
+  utterance.pitch = arquetipo === 'sensible' ? 1.1 : arquetipo === 'directivo' ? 0.95 : 1.0;
+  const voces = síntesis.getVoices();
+  const voz = voces.find(v => v.lang.startsWith('es') && (arquetipo === 'sensible' ? v.name.includes('Female') || v.name.includes('Mujer') : v.name.includes('Male') || v.name.includes('Hombre'))) || voces.find(v => v.lang.startsWith('es'));
+  if (voz) utterance.voice = voz;
+  utterance.onstart = () => { hablando = true; };
+  utterance.onend = () => { hablando = false; };
+  síntesis.speak(utterance);
+}
+
+function iniciarReconocimiento() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    mensajeBot('Tu navegador no soporta reconocimiento de voz.', null, '⚠️');
+    return;
+  }
+  if (escuchando) return;
+  const Reconocimiento = window.SpeechRecognition || window.webkitSpeechRecognition;
+  reconocimiento = new Reconocimiento();
+  reconocimiento.lang = 'es-ES';
+  reconocimiento.interimResults = false;
+  reconocimiento.continuous = false;
+
+  reconocimiento.onstart = () => {
+    escuchando = true;
+    mic.classList.add('escuchando');
+    mic.textContent = '🔴';
+  };
+
+  reconocimiento.onresult = (e) => {
+    const texto = e.results[0][0].transcript.trim();
+    if (texto) {
+      mensajeUsuario(texto);
+      const arquetipo = arquetipoActual || 'calido';
+      responder(arquetipo);
+    }
+  };
+
+  reconocimiento.onerror = (e) => {
+    console.warn('Reconocimiento error:', e.error);
+    mensajeBot('No te escuché bien. Inténtalo de nuevo o escribe.', null, '🎤');
+  };
+
+  reconocimiento.onend = () => {
+    escuchando = false;
+    mic.classList.remove('escuchando');
+    mic.textContent = '🎤';
+  };
+
+  reconocimiento.start();
+}
+
+function repetirUltimo() {
+  const ultimos = chat.querySelectorAll('.msg.bot');
+  if (ultimos.length > 0) {
+    const ultimo = ultimos[ultimos.length - 1].textContent.trim();
+    if (ultimo) hablar(ultimo, arquetipoActual);
+  }
 }
 
 function enviarMensaje() {
   const texto = input.value.trim();
   if (!texto) return;
-  turnos++;
   mensajeUsuario(texto);
   input.value = '';
-  const est = detectarEstado(texto);
-  const conv = est ? null : detectarConversacion(texto);
-  const noEntiendo = NO_ENTIENDO[Math.floor(Math.random() * NO_ENTIENDO.length)];
-  input.disabled = true;
-  const ind = indicador();
-  setTimeout(() => {
-    ind.remove();
-    if (est) {
-      responder(est);
-    } else if (conv) {
-      mensajeBot(conv);
-    } else {
-      mensajeBot(noEntiendo);
-    }
-    if (turnos >= MAX_TURNOS) {
-      finalizar();
-    } else {
-      input.disabled = false;
-      input.focus();
-    }
-  }, 900 + Math.random() * 700);
+  const arquetipo = arquetipoActual || 'calido';
+  responder(arquetipo);
 }
 
-function finalizar() {
-  chat.querySelectorAll('.acciones').forEach(n => n.remove());
-  mensajeBot(MENSAJE_FINAL);
+function enviarMensajeVoz() {
+  if (escuchando) return;
+  iniciarReconocimiento();
+}
 
-  const acciones = el('div', 'acciones');
-  const reiniciar = el('button', 'btn primario', 'Volver a empezar');
-  reiniciar.type = 'button';
-  reiniciar.addEventListener('click', () => { chat.replaceChildren(); iniciar(); });
-  acciones.appendChild(reiniciar);
+function repetirUltimo() {
+  const ultimos = chat.querySelectorAll('.msg.bot');
+  if (ultimos.length > 0) {
+    const ultimo = ultimos[ultimos.length - 1].textContent.trim();
+    if (ultimo) hablar(ultimo, arquetipoActual);
+  }
+}
 
-  const a = el('button', 'link', '¿Necesitas hablar con alguien? Ver líneas de ayuda');
-  a.type = 'button';
-  a.addEventListener('click', () => dlg.showModal());
-  acciones.appendChild(a);
-  chat.appendChild(acciones);
-  scroll();
+function toggleAyuda() { dlg.showModal(); }
+function cerrarAyuda() { dlg.close(); }
 
-  input.disabled = true;
-  enviar.disabled = true;
+// Inicialización
+if ('speechSynthesis' in window) {
+  síntesis = window.speechSynthesis;
+  síntesis.getVoices(); // precargar
+  if (síntesis.onvoiceschanged !== undefined) síntesis.onvoiceschanged = () => síntesis.getVoices();
+}
+
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  mic.style.display = 'flex';
+  repeatBtn.style.display = 'flex';
 }
 
 enviar.addEventListener('click', enviarMensaje);
-input.addEventListener('keydown', (e) => { if (e.key === 'Enter') enviarMensaje(); });
+input.addEventListener('keydown', e => { if (e.key === 'Enter') enviarMensaje(); });
+mic.addEventListener('click', enviarMensajeVoz);
+repeatBtn.addEventListener('click', repetirUltimo);
 
+// Ayuda
 function ayudaNode() {
   const box = document.createElement('div');
-  AYUDA.forEach((c) => {
+  AYUDA.forEach(c => {
     box.appendChild(el('div', 'pais', c.pais));
     c.lineas.forEach(([nombre, num]) => {
       const a = el('a', '', `${nombre}: ${num}`);
