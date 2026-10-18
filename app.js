@@ -2,7 +2,7 @@ const chat = document.getElementById('chat');
 const input = document.getElementById('input');
 const enviar = document.getElementById('enviar');
 const mic = document.getElementById('mic');
-const repeatBtn = document.getElementById('repeat');
+const speaker = document.getElementById('speaker');
 const dlg = document.getElementById('ayuda');
 const colas = {};
 
@@ -87,7 +87,7 @@ function iniciarReconocimiento() {
   reconocimiento.onstart = () => {
     escuchando = true;
     mic.classList.add('escuchando');
-    mic.textContent = 'Hablando...';
+    mic.textContent = '🔴';
   };
 
   reconocimiento.onresult = (e) => {
@@ -105,13 +105,13 @@ function iniciarReconocimiento() {
 
   reconocimiento.onend = () => {
     escuchando = false;
-    mic.textContent = 'Hablar';
+    mic.textContent = '🎤';
   };
 
   reconocimiento.start();
 }
 
-function repetirUltimo() {
+function reproducirUltimo() {
   const ultimos = chat.querySelectorAll('.msg.bot');
   if (ultimos.length > 0) {
     const ultimo = ultimos[ultimos.length - 1].textContent.trim();
@@ -132,14 +132,6 @@ function enviarMensajeVoz() {
   iniciarReconocimiento();
 }
 
-function repetirUltimo() {
-  const ultimos = chat.querySelectorAll('.msg.bot');
-  if (ultimos.length > 0) {
-    const ultimo = ultimos[ultimos.length - 1].textContent.trim();
-    if (ultimo) hablar(ultimo, arquetipoActual);
-  }
-}
-
 function toggleAyuda() { dlg.showModal(); }
 function cerrarAyuda() { dlg.close(); }
 
@@ -152,13 +144,16 @@ if ('speechSynthesis' in window) {
 
 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
   mic.style.display = 'flex';
-  repeatBtn.style.display = 'flex';
+}
+
+if ('speechSynthesis' in window) {
+  speaker.style.display = 'flex';
 }
 
 enviar.addEventListener('click', enviarMensaje);
 input.addEventListener('keydown', e => { if (e.key === 'Enter') enviarMensaje(); });
 mic.addEventListener('click', enviarMensajeVoz);
-repeatBtn.addEventListener('click', repetirUltimo);
+document.getElementById('speaker').addEventListener('click', reproducirUltimo);
 
 // Ayuda
 function ayudaNode() {
