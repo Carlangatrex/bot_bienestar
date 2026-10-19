@@ -12,6 +12,7 @@ let escuchando = false;
 let vocesDisponibles = [];
 let vozSeleccionada = null;
 let hablando = false;
+let ultimaRespuesta = '';
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -43,9 +44,17 @@ function siguiente(arr, key) {
   return colas[key].pop();
 }
 
-function responder() {
-  const empatia = siguiente(EMPATIA, 'empatia');
-  mensajeBot(empatia);
+function responder(textoUsuario = '') {
+  const intencion = detectarIntencion(textoUsuario);
+  const banco = RESPUESTAS[intencion] || RESPUESTAS.default;
+  let opciones = banco;
+  if (opciones.length > 1 && ultimaRespuesta) {
+    const sinRepetir = opciones.filter(r => r !== ultimaRespuesta);
+    if (sinRepetir.length) opciones = sinRepetir;
+  }
+  const respuesta = siguiente(opciones, 'intent-' + intencion);
+  ultimaRespuesta = respuesta;
+  mensajeBot(respuesta);
 }
 
 function esVozFemenina(v) {
@@ -132,7 +141,7 @@ function iniciar() {
   chat.replaceChildren();
   const bienvenida = el('div', 'msg bot');
   bienvenida.style.setProperty('--c', '#2f6f62');
-  bienvenida.append(el('div', '', 'Hola. Soy Alma, tu acompañante. ¿Cómo te sientes hoy?'));
+  bienvenida.append(el('div', '', 'Hola, soy Alma. Estoy aquí contigo. ¿Cómo te sientes hoy?'));
   chat.appendChild(bienvenida);
   scroll();
   input.focus();
@@ -162,7 +171,7 @@ function iniciarReconocimiento() {
     const texto = e.results[0][0].transcript.trim();
     if (texto) {
       mensajeUsuario(texto);
-      responder();
+      responder(texto);
     }
   };
 
@@ -192,7 +201,7 @@ function enviarMensaje() {
   if (!texto) return;
   mensajeUsuario(texto);
   input.value = '';
-  responder();
+  responder(texto);
 }
 
 function enviarMensajeVoz() {
