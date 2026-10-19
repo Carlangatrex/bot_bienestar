@@ -65,58 +65,89 @@ function cargarVoces() {
   // sobre las de España (es-ES)
   const latamLangs = ['es-MX', 'es-419', 'es-CO', 'es-AR', 'es-CL', 'es-PE', 'es-VE', 'es-GT', 'es-EC', 'es-BO', 'es-CU', 'es-DO', 'es-HN', 'es-NI', 'es-PA', 'es-PR', 'es-PY', 'es-SV', 'es-UY'];
   
-  // Voces preferidas por nombre (Google Latam, Microsoft Latam, Apple Latam)
+  // Voces preferidas por nombre (Google Latam, Microsoft Latam, Apple Latam) - priorizando voces femeninas
   const preferidasLatam = [
     'Google Español Latinoamericano', 'Google Spanish Latin American',
     'Microsoft Elena', 'Microsoft Laura', 'Microsoft Helena', 'Microsoft Sabina',
-    'Apple Monica', 'Apple Paulina', 'Jorge', 'Monica', 'Lucia',
-    'Google Español Latino', 'Microsoft Spanish Mexico', 'Microsoft Spanish Colombia',
-    'Apple Spanish Mexico', 'Apple Spanish Colombia'
+    'Apple Monica', 'Apple Paulina', 'Monica', 'Lucia', 'Jorge'
   ];
   
   let voz = null;
   
-  // 1. Buscar voz latinoamericana por nombre preferido
+  // Función para detectar si una voz es femenina
+  const esVozFemenina = (v) => {
+    const nombre = v.name.toLowerCase();
+    return nombre.includes('female') || 
+           nombre.includes('mujer') || 
+           nombre.includes('female1') || 
+           nombre.includes('female2') ||
+           nombre.includes('elena') || 
+           nombre.includes('laura') || 
+           nombre.includes('helena') || 
+           nombre.includes('sabina') || 
+           nombre.includes('monica') || 
+           nombre.includes('paulina') || 
+           nombre.includes('lucia') ||
+           nombre.includes('cortana') ||
+           nombre.includes('zira');
+  };
+  
+  // 1. Buscar voz latinoamericana FEMENINA por nombre preferido
   for (const pref of [
     'Google Español Latinoamericano', 'Google Spanish Latin American',
     'Microsoft Elena', 'Microsoft Laura', 'Microsoft Helena',
-    'Apple Monica', 'Apple Paulina', 'Lucia', 'Monica', 'Jorge'
+    'Apple Monica', 'Apple Paulina', 'Lucia', 'Monica'
   ]) {
     voz = vocesDisponibles.find(v => 
-      latamLangs.some(lang => v.lang.startsWith(lang)) && v.name.includes(pref)
+      latamLangs.some(lang => v.lang.startsWith(lang)) && 
+      v.name.includes(pref) && 
+      esVozFemenina(v)
     );
     if (voz) break;
   }
   
-  // 2. Buscar cualquier voz latinoamericana de calidad (Google, Microsoft, Apple)
+  // 2. Buscar cualquier voz latinoamericana FEMENINA de calidad (Google, Microsoft, Apple)
   if (!voz) {
     voz = vocesDisponibles.find(v => 
       latamLangs.some(lang => v.lang.startsWith(lang)) && 
-      (v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Apple'))
+      (v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Apple')) &&
+      esVozFemenina(v)
     );
   }
   
-  // 3. Cualquier voz latinoamericana
+  // 3. Cualquier voz latinoamericana FEMENINA
   if (!voz) {
-    voz = vocesDisponibles.find(v => latamLangs.some(lang => v.lang.startsWith(lang)));
+    voz = vocesDisponibles.find(v => 
+      latamLangs.some(lang => v.lang.startsWith(lang)) && 
+      esVozFemenina(v)
+    );
   }
   
-  // 4. Fallback: cualquier voz en español que no sea "local" ni de España
+  // 4. Fallback: cualquier voz latina (aunque sea masculina) que no sea local ni de España
+  if (!voz) {
+    voz = vocesDisponibles.find(v => 
+      latamLangs.some(lang => v.lang.startsWith(lang)) && 
+      !v.name.toLowerCase().includes('local')
+    );
+  }
+  
+  // 5. Fallback: cualquier voz en español que no sea "local" ni de España, preferiblemente femenina
   if (!voz) {
     voz = vocesDisponibles.find(v => 
       v.lang.startsWith('es') && 
       !v.name.toLowerCase().includes('local') &&
-      !v.lang.startsWith('es-ES')
+      !v.lang.startsWith('es-ES') &&
+      esVozFemenina(v)
     );
   }
   
-  // 5. Último fallback: cualquier voz en español
+  // 6. Último fallback: cualquier voz en español
   if (!voz) {
     voz = vocesDisponibles.find(v => v.lang.startsWith('es'));
   }
   
   vozSeleccionada = voz;
-  console.log('Voz TTS seleccionada:', vozSeleccionada?.name, vozSeleccionada?.lang);
+  console.log('Voz TTS seleccionada:', vozSeleccionada?.name, vozSeleccionada?.lang, vozSeleccionada?.gender || 'desconocido');
 }
 
 function hablar(texto, arquetipo) {
