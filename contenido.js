@@ -1,23 +1,50 @@
-// ARQUETIPOS (sin nombres, solo descriptores)
-const ARQUETIPOS = [
-  { id: 'calido', label: 'Cálido y empático', color: '#e07b39', descripcion: 'Como un amigo cercano que te escucha sin juzgar' },
-  { id: 'directivo', label: 'Directivo y cercano', color: '#3a8f8f', descripcion: 'Tipo coach, te guía con pasos claros' },
-  { id: 'sensible', label: 'Sensible y poético', color: '#8b7ab8', descripcion: 'Valida tus emociones con dulzura y metáforas' },
-  { id: 'practico', label: 'Práctico y orientado a acción', color: '#5a9bd8', descripcion: 'Enfocado en soluciones concretas y pasos siguientes' }
-];
-
-// FRASES DE EMPATÍA (por arquetipo, sin "sé que te sientes...")
-const EMPATIA = {
-  calido: ['Te escucho.', 'Aquí estoy.', 'No estás solo en esto.'],
-  directivo: ['Vamos paso a paso.', '¿Qué necesitas ahora?', 'Tienes más fuerza de la que crees.'],
-  sensible: ['Tu dolor es válido.', 'A veces duele y basta.', 'Permítete sentirlo.'],
-  practico: ['¿Qué pequeña cosa puedes hacer ahora?', 'Un paso a la vez.', '¿Qué está en tu control?']
+// Acompañante fija: Alma
+const ALMA = {
+  id: 'alma',
+  label: 'Alma',
+  emoji: '🌿',
+  color: '#2f6f62',
+  descripcion: 'Cálida, serena y cercana. Te escucha sin juzgar.'
 };
+
+// FRASES DE EMPATÍA (cálidas, naturales, sin "sé que te sientes...")
+const EMPATIA = [
+  'Te escucho.',
+  'Aquí estoy.',
+  'No estás sola en esto.',
+  'Tu dolor es válido.',
+  'A veces duele y basta.',
+  'Permítete sentirlo.',
+  'Vamos paso a paso.',
+  '¿Qué necesitas ahora?',
+  'Tienes más fuerza de la que crees.',
+  'Aquí estoy para lo que necesites.',
+  'No estás sola en esto.',
+  'Tu proceso es único. Respétalo.',
+  'La tormenta pasa. Aquí sigo.',
+  'Un paso a la vez.',
+  '¿Qué pequeña cosa puedes hacer ahora?',
+  'Lo que sientes tiene sentido.',
+  'No tienes que cargar con todo sola.',
+  'Aquí estoy, sin juzgar.',
+  'Tu bienestar importa.',
+  'Respira. Estoy aquí.'
+];
 
 const NO_ENTIENDO = [
   'Cuéntamelo con tus palabras.',
   '¿Cómo te sientes ahora?',
-  'Estoy escuchando.'
+  'Estoy escuchando.',
+  'Cuéntame más.',
+  'Te escucho.'
+];
+
+const DESPEDIDAS = [
+  'Gracias por compartir. Aquí estaré cuando me necesites.',
+  'Cuídate. Te mereces ternura.',
+  'Un paso a la vez. Vuelvo cuando quieras.',
+  'La tormenta pasa. Aquí sigo.',
+  'Gracias por confiar. Aquí estoy cuando me necesites.'
 ];
 
 const MENSAJE_FINAL = 'Gracias por confiar. Recuerda: no tienes que pasar esto solo. Aquí estoy cuando me necesites.';
