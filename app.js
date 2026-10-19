@@ -283,24 +283,12 @@ document.getElementById('ayudaLista').appendChild(ayudaNode());
 document.getElementById('ayudaBtn').addEventListener('click', () => dlg.showModal());
 document.getElementById('cerrar').addEventListener('click', () => dlg.close());
 
-// Variables globales (declaradas una sola vez al inicio)
-const chat = document.getElementById('chat');
-const input = document.getElementById('input');
-const enviar = document.getElementById('enviar');
-const mic = document.getElementById('mic');
-const speaker = document.getElementById('speaker');
-const dlg = document.getElementById('ayuda');
-const colas = {};
+iniciar();
+input.focus();
 
-let arquetipoActual = 'calido';
-let síntesis = window.speechSynthesis;
-let reconocimiento = null;
-let escuchando = false;
-let vocesDisponibles = [];
-let vozSeleccionada = null;
-let hablando = false;
-
-function el(tag, cls, text) {
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   if (text) e.textContent = text;
