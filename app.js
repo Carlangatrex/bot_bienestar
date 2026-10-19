@@ -65,17 +65,12 @@ function cargarVoces() {
   // sobre las de España (es-ES)
   const latamLangs = ['es-MX', 'es-419', 'es-CO', 'es-AR', 'es-CL', 'es-PE', 'es-VE', 'es-GT', 'es-EC', 'es-BO', 'es-CU', 'es-DO', 'es-HN', 'es-NI', 'es-PA', 'es-PR', 'es-PY', 'es-SV', 'es-UY'];
   
-  // Voces preferidas por nombre (Google Latam, Microsoft Latam, Apple Latam) - priorizando voces femeninas
-  const preferidasLatam = [
-    'Google Español Latinoamericano', 'Google Spanish Latin American',
-    'Microsoft Elena', 'Microsoft Laura', 'Microsoft Helena', 'Microsoft Sabina',
-    'Apple Monica', 'Apple Paulina', 'Monica', 'Lucia', 'Jorge'
-  ];
-  
-  let voz = null;
-  
-  // Función para detectar si una voz es femenina
+  // Función para detectar si una voz es femenina (más robusta)
   const esVozFemenina = (v) => {
+    const nombre = v.name.toLowerCase();
+    const gender = (v.gender || '').toLowerCase();
+    // Detectar por género explícito o por nombre
+    if (gender === 'female') return true;
     const nombre = v.name.toLowerCase();
     return nombre.includes('female') || 
            nombre.includes('mujer') || 
@@ -89,59 +84,84 @@ function cargarVoces() {
            nombre.includes('paulina') || 
            nombre.includes('lucia') ||
            nombre.includes('cortana') ||
-           nombre.includes('zira');
+           nombre.includes('zira') ||
+           nombre.includes('cortana') ||
+           nombre.includes('zira') ||
+           nombre.includes('maria') ||
+           nombre.includes('sofia') ||
+           nombre.includes('isabela') ||
+           nombre.includes('camila') ||
+           nombre.includes('valentina') ||
+           nombre.includes('gabriela') ||
+           nombre.includes('daniela') ||
+           nombre.includes('fernanda') ||
+           nombre.includes('alejandra');
   };
   
-  // 1. Buscar voz latinoamericana FEMENINA por nombre preferido
-  for (const pref of [
-    'Google Español Latinoamericano', 'Google Spanish Latin American',
-    'Microsoft Elena', 'Microsoft Laura', 'Microsoft Helena',
-    'Apple Monica', 'Apple Paulina', 'Lucia', 'Monica'
-  ]) {
-    voz = vocesDisponibles.find(v => 
-      latamLangs.some(lang => v.lang.startsWith(lang)) && 
-      v.name.includes(pref) && 
-      esVozFemenina(v)
-    );
-    if (voz) break;
+  let voz = null;
+  
+  // 1. Buscar voz latinoamericana FEMENINA de alta calidad (Google, Microsoft, Apple)
+  const proveedoresCalidad = ['Google', 'Microsoft', 'Apple'];
+  const vocesFemeninasLatam = vocesDisponibles.filter(v => 
+    latamLangs.some(lang => v.lang.startsWith(lang)) && 
+    (v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Apple')) &&
+    ((v.gender || '').toLowerCase() === 'female' || 
+     (() => {
+       const n = v.name.toLowerCase();
+       return n.includes('female') || n.includes('mujer') || 
+              n.includes('elena') || n.includes('laura') || 
+              n.includes('helena') || n.includes('sabina') || 
+              n.includes('monica') || n.includes('paulina') || 
+              n.includes('lucia') || n.includes('maria') ||
+              n.includes('sofia') || n.includes('isabela') ||
+              n.includes('camila') || n.includes('valentina') ||
+              n.includes('gabriela') || n.includes('daniela') ||
+              n.includes('fernanda') || n.includes('alejandra'));
+     })()
+  );
+  
+  // Ordenar por calidad del proveedor (Google > Microsoft > Apple)
+  if (vocesFemeninasLatam.length > 0) {
+    const ordenProveedor = { 'Google': 3, 'Microsoft': 2, 'Apple': 1 };
+    vocesFemeninasLatam.sort((a, b) => {
+      const pa = Object.keys(ordenProveedor).find(p => a.name.includes(p)) || '';
+      const pb = Object.keys(ordenProveedor).find(p => b.name.includes(p)) || '';
+      return (ordenProveedor[pb] || 0) - (ordenProveedor[pa] || 0);
+    });
+    vozSeleccionada = vocesFemeninasLatam[0];
+    console.log('Voz TTS seleccionada (femenina latam):', vozSeleccionada.name, vozSeleccionada.lang);
+    return;
   }
   
-  // 2. Buscar cualquier voz latinoamericana FEMENINA de calidad (Google, Microsoft, Apple)
-  if (!voz) {
-    voz = vocesDisponibles.find(v => 
-      latamLangs.some(lang => v.lang.startsWith(lang)) && 
-      (v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Apple')) &&
-      esVozFemenina(v)
-    );
+  // Fallback 1: Cualquier voz latinoamericana femenina
+  const vocesFemLatam = vocesDisponibles.filter(v => 
+    latamLangs.some(lang => v.lang.startsWith(lang)) && 
+    ((v.gender || '').toLowerCase() === 'female' || esVozFemenina(v))
+  );
+  if (vocesFemLatam.length > 0) {
+    vozSeleccionada = vocesFemLatam[0];
+    console.log('Voz TTS seleccionada (femenina latam fallback):', vozSeleccionada.name, vozSeleccionada.lang);
+    return;
   }
   
-  // 3. Cualquier voz latinoamericana FEMENINA
-  if (!voz) {
-    voz = vocesDisponibles.find(v => 
-      latamLangs.some(lang => v.lang.startsWith(lang)) && 
-      esVozFemenina(v)
-    );
-  }
+  // Fallback 2: Cualquier voz latam (aunque sea masculina) que no sea local
+  let voz = vocesDisponibles.find(v => 
+    latamLangs.some(lang => v.lang.startsWith(lang)) && 
+    !v.name.toLowerCase().includes('local')
+  );
   
-  // 4. Fallback: cualquier voz latina (aunque sea masculina) que no sea local ni de España
-  if (!voz) {
-    voz = vocesDisponibles.find(v => 
-      latamLangs.some(lang => v.lang.startsWith(lang)) && 
-      !v.name.toLowerCase().includes('local')
-    );
-  }
-  
-  // 5. Fallback: cualquier voz en español que no sea "local" ni de España, preferiblemente femenina
+  // Fallback 3: Cualquier voz en español que no sea "local" ni de España, preferiblemente femenina
   if (!voz) {
     voz = vocesDisponibles.find(v => 
       v.lang.startsWith('es') && 
       !v.name.toLowerCase().includes('local') &&
       !v.lang.startsWith('es-ES') &&
-      esVozFemenina(v)
+      ((v.gender || '').toLowerCase() === 'female' || 
+       (() => { const n = v.name.toLowerCase(); return n.includes('female') || n.includes('mujer'); })())
     );
   }
   
-  // 6. Último fallback: cualquier voz en español
+  // 5. Último fallback: cualquier voz en español
   if (!voz) {
     voz = vocesDisponibles.find(v => v.lang.startsWith('es'));
   }
@@ -159,29 +179,29 @@ function hablar(texto, arquetipo) {
   // Usar el idioma de la voz seleccionada, o fallback a es-419
   utterance.lang = vozSeleccionada?.lang || 'es-419';
   
-  // Parámetros base más naturales y cálidos
-  let rate = 0.94;
+  // Parámetros base optimizados para calidez y naturalidad
+  let rate = 0.93;
   let pitch = 1.0;
-  let volume = 0.95;
+  let volume = 0.96;
   
-  // Ajustes sutiles por arquetipo (diferencias sutiles, no exageradas)
+  // Ajustes muy sutiles por arquetipo (diferencias casi imperceptibles)
   if (arquetipo === 'sensible') {
     utterance.rate = 0.88;
-    utterance.pitch = 1.05;
-    utterance.volume = 0.93;
+    utterance.pitch = 1.04;
+    utterance.volume = 0.92;
   } else if (arquetipo === 'directivo') {
-    utterance.rate = 1.0;
-    utterance.pitch = 0.97;
+    utterance.rate = 0.98;
+    utterance.pitch = 0.98;
     utterance.volume = 0.97;
   } else {
-    // Cálido / Práctico - más natural y cercano
-    utterance.rate = 0.94;
+    // Cálido / Práctico - lo más natural y cálido posible
+    utterance.rate = 0.93;
     utterance.pitch = 1.0;
-    utterance.volume = 0.96;
+    utterance.volume = 0.97;
   }
   
-  // Variación aleatoria mínima para evitar sonido robótico (±2%)
-  const variacion = () => 1 + (Math.random() - 0.5) * 0.04;
+  // Micro-variación aleatoria para evitar sonido robótico (±1.5%)
+  const variacion = () => 1 + (Math.random() - 0.5) * 0.03;
   utterance.rate *= variacion();
   utterance.pitch *= variacion();
   
