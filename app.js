@@ -75,22 +75,25 @@ function cargarVoces() {
   vocesDisponibles = síntesis.getVoices();
   const latamLangs = ['es-MX', 'es-419', 'es-CO', 'es-AR', 'es-CL', 'es-PE', 'es-VE', 'es-GT', 'es-EC', 'es-BO', 'es-CU', 'es-DO', 'es-HN', 'es-NI', 'es-PA', 'es-PR', 'es-PY', 'es-SV', 'es-UY'];
 
+  const esVozFemenina = (v) => {
+    const n = v.name.toLowerCase();
+    const gender = (v.gender || '').toLowerCase();
+    if (gender === 'female') return true;
+    return n.includes('female') || n.includes('mujer') ||
+           n.includes('elena') || n.includes('laura') ||
+           n.includes('helena') || n.includes('sabina') ||
+           n.includes('monica') || n.includes('paulina') ||
+           n.includes('lucia') || n.includes('maria') ||
+           n.includes('sofia') || n.includes('isabela') ||
+           n.includes('camila') || n.includes('valentina') ||
+           n.includes('gabriela') || n.includes('daniela') ||
+           n.includes('fernanda') || n.includes('alejandra');
+  };
+
   // 1. Buscar voz latinoamericana FEMENINA de alta calidad (Google > Microsoft > Apple)
   const vocesFemeninasLatam = vocesDisponibles.filter(v => {
     const esLatam = ['es-MX', 'es-419', 'es-CO', 'es-AR', 'es-CL', 'es-PE', 'es-VE', 'es-GT', 'es-EC', 'es-BO', 'es-CU', 'es-DO', 'es-HN', 'es-NI', 'es-PA', 'es-PR', 'es-PY', 'es-SV', 'es-UY'].some(lang => v.lang.startsWith(lang));
     const esProveedor = v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Apple');
-    const esFemenina = (v.gender || '').toLowerCase() === 'female' || (() => {
-      const n = v.name.toLowerCase();
-      return n.includes('female') || n.includes('mujer') ||
-             n.includes('elena') || n.includes('laura') ||
-             n.includes('helena') || n.includes('sabina') ||
-             n.includes('monica') || n.includes('paulina') ||
-             n.includes('lucia') || n.includes('maria') ||
-             n.includes('sofia') || n.includes('isabela') ||
-             n.includes('camila') || n.includes('valentina') ||
-             n.includes('gabriela') || n.includes('daniela') ||
-             n.includes('fernanda') || n.includes('alejandra');
-         })();
     return latamLangs.some(l => v.lang.startsWith(l)) && (v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Apple')) && (esVozFemenina(v.name) || (v.gender || '').toLowerCase() === 'female');
   });
 
