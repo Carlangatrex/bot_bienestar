@@ -4,6 +4,7 @@ const enviar = document.getElementById('enviar');
 const mic = document.getElementById('mic');
 const speaker = document.getElementById('speaker');
 const dlg = document.getElementById('ayuda');
+const estado = document.getElementById('estado');
 const colas = {};
 
 let síntesis = window.speechSynthesis;
@@ -13,6 +14,7 @@ let vocesDisponibles = [];
 let vozSeleccionada = null;
 let hablando = false;
 let ultimaRespuesta = '';
+let respuestaPendiente = 0;
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -54,7 +56,41 @@ function responder(textoUsuario = '') {
   }
   const respuesta = siguiente(opciones, 'intent-' + intencion);
   ultimaRespuesta = respuesta;
-  mensajeBot(respuesta);
+
+  const id = ++respuestaPendiente;
+
+  if (intencion === 'crisis') {
+    quitarEscribiendo();
+    estado.textContent = 'Activa ahora';
+    mensajeBot(respuesta);
+    return;
+  }
+
+  mostrarEscribiendo();
+  estado.textContent = 'escribiendo...';
+
+  const espera = 550 + Math.random() * 650;
+  setTimeout(() => {
+    if (id !== respuestaPendiente) return;
+    quitarEscribiendo();
+    estado.textContent = 'Activa ahora';
+    mensajeBot(respuesta);
+  }, espera);
+}
+
+function mostrarEscribiendo() {
+  quitarEscribiendo();
+  const t = el('div', 'msg bot typing');
+  t.id = 'typing';
+  t.setAttribute('aria-label', 'Alma está escribiendo');
+  t.append(document.createElement('span'), document.createElement('span'), document.createElement('span'));
+  chat.appendChild(t);
+  scroll();
+}
+
+function quitarEscribiendo() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
 }
 
 function esVozFemenina(v) {
