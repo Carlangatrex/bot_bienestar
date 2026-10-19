@@ -109,8 +109,8 @@ function cargarVoces() {
               n.includes('sofia') || n.includes('isabela') ||
               n.includes('camila') || n.includes('valentina') ||
               n.includes('gabriela') || n.includes('daniela') ||
-              n.includes('fernanda') || n.includes('alejandra'));
-     })()
+n.includes('fernanda') || n.includes('alejandra')
+      })()
   );
   
   // Ordenar por calidad del proveedor (Google > Microsoft > Apple)
