@@ -22,13 +22,13 @@ function el(tag, cls, text) {
 
 function scroll() { chat.scrollTop = chat.scrollHeight; }
 
-function mensajeBot(texto) {
+function mensajeBot(texto, autoPlay = true) {
   const b = el('div', 'msg bot');
   b.style.setProperty('--c', '#2f6f62');
   b.append(el('div', '', texto));
   chat.appendChild(b);
   scroll();
-  if (síntesis && !hablando) hablar(texto);
+  if (autoPlay && síntesis && !hablando) hablar(texto);
 }
 
 function mensajeUsuario(texto) {
@@ -183,6 +183,8 @@ function iniciar() {
   chat.appendChild(bienvenida);
   scroll();
   input.focus();
+  // No auto-play: el navegador bloquea audio sin interacción del usuario
+  // El usuario puede usar el botón 🔊 para escuchar el mensaje
 }
 
 function iniciarReconocimiento() {
