@@ -58,8 +58,10 @@ function iniciar() {
   input.focus();
 }
 
-function esVozFemenina(nombre) {
-  const n = nombre.toLowerCase();
+function esVozFemenina(v) {
+  const n = (v.name || '').toLowerCase();
+  const gender = (v.gender || '').toLowerCase();
+  if (gender === 'female') return true;
   return n.includes('female') || n.includes('mujer') ||
          n.includes('elena') || n.includes('laura') ||
          n.includes('helena') || n.includes('sabina') ||
