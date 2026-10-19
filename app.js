@@ -124,35 +124,42 @@ function hablar(texto, arquetipo) {
   if (hablando) síntesis.cancel();
   if (!vozSeleccionada) cargarVoces();
   
-  // Agregar pequeñas pausas para mayor naturalidad
-  const textoConPausas = texto
-    .replace(/\. /g, '. <break time="300ms"/> ')
-    .replace(/, /g, ', <break time="200ms"/> ')
-    .replace(/; /g, '; <break time="300ms"/> ')
-    .replace(/: /g, ': <break time="250ms"/> ');
+  const utterance = new SpeechSynthesisUtterance(texto);
+  // Usar el idioma de la voz seleccionada, o fallback a es-419
+  utterance.lang = vozSeleccionada?.lang || 'es-419';
   
-  const utterance = new SpeechSynthesisUtterance(textoConPausas);
-  // Usar es-419 (español latinoamericano) en lugar de es-ES
-  utterance.lang = vozSeleccionada?.lang?.startsWith('es-') ? vozSeleccionada.lang : 'es-419';
+  // Parámetros base más naturales y cálidos
+  let rate = 0.94;
+  let pitch = 1.0;
+  let volume = 0.95;
   
-  // Parámetros base más naturales (menos robóticos)
-  const baseRate = 0.95;
-  const basePitch = 1.0;
-  const baseVolume = 0.95;
-  
+  // Ajustes sutiles por arquetipo (diferencias sutiles, no exageradas)
   if (arquetipo === 'sensible') {
-    utterance.rate = 0.85;
-    utterance.pitch = 1.08;
-    utterance.volume = 0.92;
+    utterance.rate = 0.88;
+    utterance.pitch = 1.05;
+    utterance.volume = 0.93;
   } else if (arquetipo === 'directivo') {
     utterance.rate = 1.0;
-    utterance.pitch = 0.98;
-    utterance.volume = 0.98;
+    utterance.pitch = 0.97;
+    utterance.volume = 0.97;
   } else {
-    utterance.rate = 0.95;
+    // Cálido / Práctico - más natural y cercano
+    utterance.rate = 0.94;
     utterance.pitch = 1.0;
-    utterance.volume = 0.95;
+    utterance.volume = 0.96;
   }
+  
+  // Variación aleatoria mínima para evitar sonido robótico (±2%)
+  const variacion = () => 1 + (Math.random() - 0.5) * 0.04;
+  utterance.rate *= variacion();
+  utterance.pitch *= variacion();
+  
+  if (vozSeleccionada) utterance.voice = vozSeleccionada;
+  
+  utterance.onstart = () => { hablando = true; };
+  utterance.onend = () => { hablando = false; };
+  síntesis.speak(utterance);
+}
   
   if (vozSeleccionada) utterance.voice = vozSeleccionada;
   
