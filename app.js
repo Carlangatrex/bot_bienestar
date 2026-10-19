@@ -289,15 +289,6 @@ input.focus();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
-  const e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (text) e.textContent = text;
-  return e;
-}
-
-function scroll() { chat.scrollTop = chat.scrollHeight; }
-
-function mensajeBot(texto, arquetipo) {
   const b = el('div', 'msg bot');
   if (arquetipo) b.style.setProperty('--c', ARQUETIPOS.find(a => a.id === arquetipo)?.color || 'var(--bar)');
   b.append(el('div', '', texto));
