@@ -289,13 +289,6 @@ input.focus();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
-  const b = el('div', 'msg bot');
-  if (arquetipo) b.style.setProperty('--c', ARQUETIPOS.find(a => a.id === arquetipo)?.color || 'var(--bar)');
-  b.append(el('div', '', texto));
-  chat.appendChild(b);
-  scroll();
-  if (síntesis && !hablando) hablar(texto, arquetipo);
-}
 
 function mensajeUsuario(texto) {
   chat.appendChild(el('div', 'msg usuario', texto));
