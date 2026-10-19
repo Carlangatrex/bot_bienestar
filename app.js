@@ -61,23 +61,60 @@ function iniciar() {
 
 function cargarVoces() {
   vocesDisponibles = síntesis.getVoices();
-  const preferidas = [
-    'Google Español', 'Google Spanish', 'Microsoft Elena', 'Microsoft Laura',
-    'Microsoft Helena', 'Apple Monica', 'Apple Paulina', 'Jorge', 'Monica',
-    'Google Español de Estados Unidos', 'Microsoft Sabina', 'Lucia'
+  // Priorizar voces latinoamericanas (es-MX, es-419, es-CO, es-AR, es-CL, es-PE, es-VE, etc.)
+  // sobre las de España (es-ES)
+  const latamLangs = ['es-MX', 'es-419', 'es-CO', 'es-AR', 'es-CL', 'es-PE', 'es-VE', 'es-GT', 'es-EC', 'es-BO', 'es-CU', 'es-DO', 'es-HN', 'es-NI', 'es-PA', 'es-PR', 'es-PY', 'es-SV', 'es-UY'];
+  
+  // Voces preferidas por nombre (Google Latam, Microsoft Latam, Apple Latam)
+  const preferidasLatam = [
+    'Google Español Latinoamericano', 'Google Spanish Latin American',
+    'Microsoft Elena', 'Microsoft Laura', 'Microsoft Helena', 'Microsoft Sabina',
+    'Apple Monica', 'Apple Paulina', 'Jorge', 'Monica', 'Lucia',
+    'Google Español Latino', 'Microsoft Spanish Mexico', 'Microsoft Spanish Colombia',
+    'Apple Spanish Mexico', 'Apple Spanish Colombia'
   ];
   
   let voz = null;
-  for (const pref of preferidas) {
-    voz = vocesDisponibles.find(v => v.lang.startsWith('es') && v.name.includes(pref));
+  
+  // 1. Buscar voz latinoamericana por nombre preferido
+  for (const pref of [
+    'Google Español Latinoamericano', 'Google Spanish Latin American',
+    'Microsoft Elena', 'Microsoft Laura', 'Microsoft Helena',
+    'Apple Monica', 'Apple Paulina', 'Lucia', 'Monica', 'Jorge'
+  ]) {
+    voz = vocesDisponibles.find(v => 
+      latamLangs.some(lang => v.lang.startsWith(lang)) && v.name.includes(pref)
+    );
     if (voz) break;
   }
+  
+  // 2. Buscar cualquier voz latinoamericana de calidad (Google, Microsoft, Apple)
   if (!voz) {
-    voz = vocesDisponibles.find(v => v.lang.startsWith('es') && !v.name.toLowerCase().includes('local'));
+    voz = vocesDisponibles.find(v => 
+      latamLangs.some(lang => v.lang.startsWith(lang)) && 
+      (v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Apple'))
+    );
   }
+  
+  // 3. Cualquier voz latinoamericana
+  if (!voz) {
+    voz = vocesDisponibles.find(v => latamLangs.some(lang => v.lang.startsWith(lang)));
+  }
+  
+  // 4. Fallback: cualquier voz en español que no sea "local" ni de España
+  if (!voz) {
+    voz = vocesDisponibles.find(v => 
+      v.lang.startsWith('es') && 
+      !v.name.toLowerCase().includes('local') &&
+      !v.lang.startsWith('es-ES')
+    );
+  }
+  
+  // 5. Último fallback: cualquier voz en español
   if (!voz) {
     voz = vocesDisponibles.find(v => v.lang.startsWith('es'));
   }
+  
   vozSeleccionada = voz;
   console.log('Voz TTS seleccionada:', vozSeleccionada?.name, vozSeleccionada?.lang);
 }
@@ -87,21 +124,34 @@ function hablar(texto, arquetipo) {
   if (hablando) síntesis.cancel();
   if (!vozSeleccionada) cargarVoces();
   
-  const utterance = new SpeechSynthesisUtterance(texto);
-  utterance.lang = 'es-ES';
+  // Agregar pequeñas pausas para mayor naturalidad
+  const textoConPausas = texto
+    .replace(/\. /g, '. <break time="300ms"/> ')
+    .replace(/, /g, ', <break time="200ms"/> ')
+    .replace(/; /g, '; <break time="300ms"/> ')
+    .replace(/: /g, ': <break time="250ms"/> ');
+  
+  const utterance = new SpeechSynthesisUtterance(textoConPausas);
+  // Usar es-419 (español latinoamericano) en lugar de es-ES
+  utterance.lang = vozSeleccionada?.lang?.startsWith('es-') ? vozSeleccionada.lang : 'es-419';
+  
+  // Parámetros base más naturales (menos robóticos)
+  const baseRate = 0.95;
+  const basePitch = 1.0;
+  const baseVolume = 0.95;
   
   if (arquetipo === 'sensible') {
-    utterance.rate = 0.82;
-    utterance.pitch = 1.05;
-    utterance.volume = 0.95;
+    utterance.rate = 0.85;
+    utterance.pitch = 1.08;
+    utterance.volume = 0.92;
   } else if (arquetipo === 'directivo') {
-    utterance.rate = 1.05;
-    utterance.pitch = 0.95;
-    utterance.volume = 1.0;
-  } else {
-    utterance.rate = 0.92;
-    utterance.pitch = 1.0;
+    utterance.rate = 1.0;
+    utterance.pitch = 0.98;
     utterance.volume = 0.98;
+  } else {
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    utterance.volume = 0.95;
   }
   
   if (vozSeleccionada) utterance.voice = vozSeleccionada;
