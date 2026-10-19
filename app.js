@@ -160,14 +160,6 @@ function hablar(texto, arquetipo) {
   utterance.onend = () => { hablando = false; };
   síntesis.speak(utterance);
 }
-  
-  if (vozSeleccionada) utterance.voice = vozSeleccionada;
-  
-  utterance.onstart = () => { hablando = true; };
-  utterance.onend = () => { hablando = false; };
-  síntesis.speak(utterance);
-}
-
 function cargarVocesInicial() {
   if (síntesis) {
     síntesis.onvoiceschanged = cargarVoces;
