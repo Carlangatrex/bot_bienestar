@@ -6,7 +6,6 @@ const speaker = document.getElementById('speaker');
 const dlg = document.getElementById('ayuda');
 const colas = {};
 
-let arquetipoActual = 'calido';
 let síntesis = window.speechSynthesis;
 let reconocimiento = null;
 let escuchando = false;
@@ -59,82 +58,66 @@ function iniciar() {
   input.focus();
 }
 
-function esVozFemenina(v) {
-  const n = v.name.toLowerCase();
-  const gender = (v.gender || '').toLowerCase();
-  if (gender === 'female') return true;
-  return n.includes('female') || n.includes('mujer') || n.includes('female1') || n.includes('female2') ||
-         n.includes('elena') || n.includes('laura') || n.includes('helena') || n.includes('sabina') ||
-         n.includes('monica') || n.includes('paulina') || n.includes('lucia') || n.includes('cortana') ||
-         n.includes('zira') || n.includes('maria') || n.includes('sofia') || n.includes('isabela') ||
-         n.includes('camila') || n.includes('valentina') || n.includes('gabriela') ||
-         n.includes('daniela') || n.includes('fernanda') || n.includes('alejandra');
+function esVozFemenina(nombre) {
+  const n = nombre.toLowerCase();
+  return n.includes('female') || n.includes('mujer') ||
+         n.includes('elena') || n.includes('laura') ||
+         n.includes('helena') || n.includes('sabina') ||
+         n.includes('monica') || n.includes('paulina') ||
+         n.includes('lucia') || n.includes('maria') ||
+         n.includes('sofia') || n.includes('isabela') ||
+         n.includes('camila') || n.includes('valentina') ||
+         n.includes('gabriela') || n.includes('daniela') ||
+         n.includes('fernanda') || n.includes('alejandra');
 }
 
 function cargarVoces() {
   vocesDisponibles = síntesis.getVoices();
   const latamLangs = ['es-MX', 'es-419', 'es-CO', 'es-AR', 'es-CL', 'es-PE', 'es-VE', 'es-GT', 'es-EC', 'es-BO', 'es-CU', 'es-DO', 'es-HN', 'es-NI', 'es-PA', 'es-PR', 'es-PY', 'es-SV', 'es-UY'];
 
+  const esFemenina = (v) => {
+    const gender = (v.gender || '').toLowerCase();
+    if (gender === 'female') return true;
+    return esVozFemenina(v.name);
+  };
+
   // 1. Buscar voz latinoamericana FEMENINA de alta calidad (Google > Microsoft > Apple)
   const vocesFemeninasLatam = vocesDisponibles.filter(v => {
     const esLatam = ['es-MX', 'es-419', 'es-CO', 'es-AR', 'es-CL', 'es-PE', 'es-VE', 'es-GT', 'es-EC', 'es-BO', 'es-CU', 'es-DO', 'es-HN', 'es-NI', 'es-PA', 'es-PR', 'es-PY', 'es-SV', 'es-UY'].some(lang => v.lang.startsWith(lang));
-    const esProveedorCalidad = v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Apple');
-    const esFemenina = (v.gender || '').toLowerCase() === 'female' || (() => {
-      const n = v.name.toLowerCase();
-      return n.includes('female') || n.includes('mujer') ||
-             n.includes('elena') || n.includes('laura') ||
-             n.includes('helena') || n.includes('sabina') ||
-             n.includes('monica') || n.includes('paulina') ||
-             n.includes('lucia') || n.includes('maria') ||
-             n.includes('sofia') || n.includes('isabela') ||
-             n.includes('camila') || n.includes('valentina') ||
-             n.includes('gabriela') || n.includes('daniela') ||
-             n.includes('fernanda') || n.includes('alejandra');
-         })();
-    return latamLangs.some(lang => v.lang.startsWith(lang)) && esProveedorCalidad && esFemenina;
+    const esProveedor = v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Apple');
+    return latamLangs.some(l => v.lang.startsWith(l)) && (v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Apple')) && (esVozFemenina(v.name) || (v.gender || '').toLowerCase() === 'female');
   });
 
   if (vocesFemeninasLatam.length > 0) {
-    const ordenProveedor = { 'Google': 3, 'Microsoft': 2, 'Apple': 1 };
+    const orden = { 'Google': 3, 'Microsoft': 2, 'Apple': 1 };
     vocesFemeninasLatam.sort((a, b) => {
-      const pa = Object.keys(ordenProveedor).find(p => a.name.includes(p)) || '';
-      const pb = Object.keys(ordenProveedor).find(p => b.name.includes(p)) || '';
-      return (ordenProveedor[pb] || 0) - (ordenProveedor[pa] || 0);
+      const pa = Object.keys(orden).find(p => a.name.includes(p)) || '';
+      const pb = Object.keys(orden).find(p => b.name.includes(p)) || '';
+      return (orden[pb] || 0) - (orden[pa] || 0);
     });
     vozSeleccionada = vocesFemeninasLatam[0];
-    console.log('Voz TTS seleccionada (femenina latam):', vozSeleccionada.name, vozSeleccionada.lang);
+    console.log('Voz TTS:', vozSeleccionada.name, vozSeleccionada.lang);
     return;
   }
 
-  // Fallback 1: Cualquier voz latinoamericana femenina
+  // Fallback 1: Cualquier voz latina femenina
   const vocesFemLatam = vocesDisponibles.filter(v =>
-    ['es-MX', 'es-419', 'es-CO', 'es-AR', 'es-CL', 'es-PE', 'es-VE', 'es-GT', 'es-EC', 'es-BO', 'es-CU', 'es-DO', 'es-HN', 'es-NI', 'es-PA', 'es-PR', 'es-PY', 'es-SV', 'es-UY'].some(lang => v.lang.startsWith(lang)) &&
-    ((v.gender || '').toLowerCase() === 'female' || (() => {
-      const n = v.name.toLowerCase();
-      return n.includes('female') || n.includes('mujer') ||
-             n.includes('elena') || n.includes('laura') ||
-             n.includes('helena') || n.includes('sabina') ||
-             n.includes('monica') || n.includes('paulina') ||
-             n.includes('lucia') || n.includes('maria') ||
-             n.includes('sofia') || n.includes('isabela') ||
-             n.includes('camila') || n.includes('valentina') ||
-             n.includes('gabriela') || n.includes('daniela') ||
-             n.includes('fernanda') || n.includes('alejandra');
-    })()
+    ['es-MX','es-419','es-CO','es-AR','es-CL','es-PE','es-VE','es-GT','es-EC','es-BO','es-CU','es-DO','es-HN','es-NI','es-PA','es-PR','es-PY','es-SV','es-UY'].some(l => v.lang.startsWith(l)) &&
+    ((v.gender || '').toLowerCase() === 'female' || (() => { const n = v.name.toLowerCase(); return n.includes('female') || n.includes('mujer'); })())
   );
   if (vocesFemLatam.length > 0) {
     vozSeleccionada = vocesFemLatam[0];
-    console.log('Voz TTS seleccionada (femenina latam fallback):', vozSeleccionada.name, vozSeleccionada.lang);
+    console.log('Voz TTS (fallback 1):', vozSeleccionada.name, vozSeleccionada.lang);
     return;
   }
 
-  // Fallback 2: Cualquier voz latam (aunque sea masculina) que no sea local
+  // Fallback 2: Cualquier voz latam no local
   let voz = vocesDisponibles.find(v =>
-    ['es-MX', 'es-419', 'es-CO', 'es-AR', 'es-CL', 'es-PE', 'es-VE', 'es-GT', 'es-EC', 'es-BO', 'es-CU', 'es-DO', 'es-HN', 'es-NI', 'es-PA', 'es-PR', 'es-PY', 'es-SV', 'es-UY'].some(lang => v.lang.startsWith(lang)) &&
+    ['es-MX','es-419','es-CO','es-AR','es-CL','es-PE','es-VE','es-GT','es-EC','es-BO','es-CU','es-DO','es-HN','es-NI','es-PA','es-PR','es-PY','es-SV','es-UY'].some(l => v.lang.startsWith(l)) &&
     !v.name.toLowerCase().includes('local')
   );
 
-  // Fallback 3: Cualquier voz en español que no sea "local" ni de España, preferiblemente femenina
+  // Fallback 3: voz español no local, no España, preferiblemente femenina
   if (!voz) {
     voz = vocesDisponibles.find(v =>
       v.lang.startsWith('es') &&
@@ -144,13 +127,13 @@ function cargarVoces() {
     );
   }
 
-  // Último fallback: cualquier voz en español
+  // Último fallback
   if (!voz) {
     voz = vocesDisponibles.find(v => v.lang.startsWith('es'));
   }
 
   vozSeleccionada = voz;
-  console.log('Voz TTS seleccionada:', vozSeleccionada?.name, vozSeleccionada?.lang, vozSeleccionada?.gender || 'desconocido');
+  console.log('Voz TTS:', vozSeleccionada?.name, vozSeleccionada?.lang, vozSeleccionada?.gender || '?');
 }
 
 function hablar(texto) {
@@ -183,16 +166,6 @@ function cargarVocesInicial() {
   }
 }
 
-function iniciar() {
-  chat.replaceChildren();
-  const bienvenida = el('div', 'msg bot');
-  bienvenida.style.setProperty('--c', '#2f6f62');
-  bienvenida.append(el('div', '', 'Hola. Soy Alma, tu acompañante. ¿Cómo te sientes hoy?'));
-  chat.appendChild(bienvenida);
-  scroll();
-  input.focus();
-}
-
 function iniciarReconocimiento() {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     mensajeBot('Tu navegador no soporta reconocimiento de voz.');
@@ -314,7 +287,6 @@ const speaker = document.getElementById('speaker');
 const dlg = document.getElementById('ayuda');
 const colas = {};
 
-let arquetipoActual = 'calido';
 let síntesis = window.speechSynthesis;
 let reconocimiento = null;
 let escuchando = false;
@@ -367,95 +339,6 @@ function iniciar() {
   input.focus();
 }
 
-function cargarVoces() {
-  vocesDisponibles = síntesis.getVoices();
-  const latamLangs = ['es-MX', 'es-419', 'es-CO', 'es-AR', 'es-CL', 'es-PE', 'es-VE', 'es-GT', 'es-EC', 'es-BO', 'es-CU', 'es-DO', 'es-HN', 'es-NI', 'es-PA', 'es-PR', 'es-PY', 'es-SV', 'es-UY'];
-
-  const esVozFemenina = (v) => {
-    const n = v.name.toLowerCase();
-    const gender = (v.gender || '').toLowerCase();
-    if (gender === 'female') return true;
-    return n.includes('female') || n.includes('mujer') || n.includes('female1') || n.includes('female2') ||
-           n.includes('elena') || n.includes('laura') || n.includes('helena') || n.includes('sabina') ||
-           n.includes('monica') || n.includes('paulina') || n.includes('lucia') || n.includes('cortana') ||
-           n.includes('zira') || n.includes('maria') || n.includes('sofia') || n.includes('isabela') ||
-           n.includes('camila') || n.includes('valentina') || n.includes('gabriela') ||
-           n.includes('daniela') || n.includes('fernanda') || n.includes('alejandra');
-  };
-
-  // 1. Buscar voz latinoamericana FEMENINA de alta calidad (Google > Microsoft > Apple)
-  const vocesFemeninasLatam = vocesDisponibles.filter(v => {
-    const esLatam = ['es-MX', 'es-419', 'es-CO', 'es-AR', 'es-CL', 'es-PE', 'es-VE', 'es-GT', 'es-EC', 'es-BO', 'es-CU', 'es-DO', 'es-HN', 'es-NI', 'es-PA', 'es-PR', 'es-PY', 'es-SV', 'es-UY'].some(lang => v.lang.startsWith(lang));
-    const esProveedorCalidad = v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Apple');
-    const esFemenina = (v.gender || '').toLowerCase() === 'female' || esVozFemenina(v);
-    return esLatam && esProveedorCalidad && esFemenina;
-  });
-
-  if (vocesFemeninasLatam.length > 0) {
-    const ordenProveedor = { 'Google': 3, 'Microsoft': 2, 'Apple': 1 };
-    vocesFemeninasLatam.sort((a, b) => {
-      const pa = Object.keys(ordenProveedor).find(p => a.name.includes(p)) || '';
-      const pb = Object.keys(ordenProveedor).find(p => b.name.includes(p)) || '';
-      return (ordenProveedor[pb] || 0) - (ordenProveedor[pa] || 0);
-    });
-    vozSeleccionada = vocesFemeninasLatam[0];
-    console.log('Voz TTS seleccionada (femenina latam):', vozSeleccionada.name, vozSeleccionada.lang);
-    return;
-  }
-
-  // Fallback 1: Cualquier voz latinoamericana femenina
-  const vocesFemLatam = vocesDisponibles.filter(v =>
-    ['es-MX', 'es-419', 'es-CO', 'es-AR', 'es-CL', 'es-PE', 'es-VE', 'es-GT', 'es-EC', 'es-BO', 'es-CU', 'es-DO', 'es-HN', 'es-NI', 'es-PA', 'es-PR', 'es-PY', 'es-SV', 'es-UY'].some(lang => v.lang.startsWith(lang)) &&
-    ((v.gender || '').toLowerCase() === 'female' || esVozFemenina(v))
-  );
-  if (vocesFemLatam.length > 0) {
-    vozSeleccionada = vocesFemLatam[0];
-    console.log('Voz TTS seleccionada (femenina latam fallback):', vozSeleccionada.name, vozSeleccionada.lang);
-    return;
-  }
-
-  // Fallback 2: Cualquier voz latam (aunque sea masculina) que no sea local
-  let voz = vocesDisponibles.find(v =>
-    ['es-MX', 'es-419', 'es-CO', 'es-AR', 'es-CL', 'es-PE', 'es-VE', 'es-GT', 'es-EC', 'es-BO', 'es-CU', 'es-DO', 'es-HN', 'es-NI', 'es-PA', 'es-PR', 'es-PY', 'es-SV', 'es-UY'].some(lang => v.lang.startsWith(lang)) &&
-    !v.name.toLowerCase().includes('local')
-  );
-
-  // Fallback 3: Cualquier voz en español que no sea "local" ni de España, preferiblemente femenina
-  if (!voz) {
-    voz = vocesDisponibles.find(v =>
-      v.lang.startsWith('es') &&
-      !v.name.toLowerCase().includes('local') &&
-      !v.lang.startsWith('es-ES') &&
-      ((v.gender || '').toLowerCase() === 'female' || (() => { const n = v.name.toLowerCase(); return n.includes('female') || n.includes('mujer'); })())
-    );
-  }
-
-  // Último fallback: cualquier voz en español
-  if (!voz) {
-    voz = vocesDisponibles.find(v => v.lang.startsWith('es'));
-  }
-
-  vozSeleccionada = voz;
-  console.log('Voz TTS seleccionada:', vozSeleccionada?.name, vozSeleccionada?.lang, vozSeleccionada?.gender || 'desconocido');
-}
-
-function cargarVocesInicial() {
-  if (síntesis) {
-    síntesis.onvoiceschanged = cargarVoces;
-    cargarVoces();
-  }
-}
-
-function iniciar() {
-  chat.replaceChildren();
-  const bienvenida = el('div', 'msg bot');
-  bienvenida.style.setProperty('--c', '#2f6f62');
-  bienvenida.append(el('div', '', 'Hola. Soy Alma, tu acompañante. ¿Cómo te sientes hoy?'));
-  chat.appendChild(bienvenida);
-  scroll();
-  input.focus();
-}
-
 function iniciarReconocimiento() {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     mensajeBot('Tu navegador no soporta reconocimiento de voz.');
@@ -577,7 +460,6 @@ const speaker = document.getElementById('speaker');
 const dlg = document.getElementById('ayuda');
 const colas = {};
 
-let arquetipoActual = 'calido';
 let síntesis = window.speechSynthesis;
 let reconocimiento = null;
 let escuchando = false;
