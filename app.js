@@ -82,7 +82,7 @@ function mostrarEscribiendo() {
   quitarEscribiendo();
   const t = el('div', 'msg bot typing');
   t.id = 'typing';
-  t.setAttribute('aria-label', 'Alma está escribiendo');
+  t.setAttribute('aria-label', 'Lorena está escribiendo');
   t.append(document.createElement('span'), document.createElement('span'), document.createElement('span'));
   chat.appendChild(t);
   scroll();
@@ -177,7 +177,7 @@ function iniciar() {
   chat.replaceChildren();
   const bienvenida = el('div', 'msg bot');
   bienvenida.style.setProperty('--c', '#2f6f62');
-  bienvenida.append(el('div', '', 'Hola, soy Alma. Estoy aquí contigo. ¿Cómo te sientes hoy?'));
+  bienvenida.append(el('div', '', 'Hola, soy Lorena. Estoy aquí contigo. ¿Cómo te sientes hoy?'));
   chat.appendChild(bienvenida);
   scroll();
   input.focus();

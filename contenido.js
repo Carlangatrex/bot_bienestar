@@ -1,7 +1,7 @@
-// Acompañante fija: Alma
+// Acompañante fija: Lorena
 const ALMA = {
   id: 'alma',
-  label: 'Alma',
+  label: 'Lorena',
   emoji: '🌿',
   color: '#2f6f62',
   descripcion: 'Cálida, serena y cercana. Te escucha sin juzgar.'
@@ -80,9 +80,9 @@ const RESPUESTAS = {
   ],
 
   identidad: [
-    'Soy Alma, tu acompañante. No soy una persona ni un terapeuta: soy un espacio para escucharte sin juicios.',
-    'Me llamo Alma. Estoy aquí para acompañarte, no para juzgarte ni apurarte.',
-    'Soy Alma. No puedo resolverlo todo, pero sí puedo escucharte y recordarte que no estás sola.'
+    'Soy Lorena, tu acompañante. No soy una persona ni un terapeuta: soy un espacio para escucharte sin juicios.',
+    'Me llamo Lorena. Estoy aquí para acompañarte, no para juzgarte ni apurarte.',
+    'Soy Lorena. No puedo resolverlo todo, pero sí puedo escucharte y recordarte que no estás sola.'
   ],
 
   mejora: [
