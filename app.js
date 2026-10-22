@@ -121,14 +121,6 @@ function personalizar(texto) {
   let t = texto.replace('{nombre}', nombreUsuario || '');
   return aplicarGenero(t);
 }
-  quitarEscribiendo();
-  const t = el('div', 'msg bot typing');
-  t.id = 'typing';
-  t.setAttribute('aria-label', 'Lorena está escribiendo');
-  t.append(document.createElement('span'), document.createElement('span'), document.createElement('span'));
-  chat.appendChild(t);
-  scroll();
-}
 
 function mostrarEscribiendo() {
   quitarEscribiendo();
