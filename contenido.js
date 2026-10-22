@@ -10,11 +10,6 @@ const ALMA = {
 // Flujo de bienvenida
 const BIENVENIDA_INICIAL = 'Hola. Soy Lorena, tu acompañante. Antes de empezar, ¿cómo te llamas?';
 
-const PREGUNTA_GENERO = [
-  'Gracias, {nombre}. ¿Cómo te gustaría que me dirija a ti? Puedes decirme: masculino, femenino, otro o prefiero no decirlo.',
-  'Mucho gusto, {nombre}. Dime, ¿cómo te identificas en cuanto al género? Masculino, femenino, otro o no decirlo.'
-];
-
 const BIENVENIDA_FINAL = [
   'Mucho gusto, {nombre}. Estoy aquí para escucharte sin juzgar. ¿Cómo te sientes hoy?',
   'Encantada de conocerte, {nombre}. Vamos a conversar con calma. ¿Cómo te sientes ahora?',

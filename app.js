@@ -17,9 +17,8 @@ let ultimaRespuesta = '';
 let respuestaPendiente = 0;
 
 /* Flujo de bienvenida */
-let etapaInicio = 'inicial'; // 'inicial' | 'nombre' | 'genero' | 'listo'
+let etapaInicio = 'inicial'; // 'inicial' | 'nombre' | 'listo'
 let nombreUsuario = '';
-let generoUsuario = ''; // 'masculino' | 'femenino' | 'otro' | 'no decir'
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -87,18 +86,6 @@ function responder(textoUsuario = '') {
 function procesarInicio(texto) {
   if (etapaInicio === 'nombre') {
     nombreUsuario = texto.trim() || 'amigo';
-    etapaInicio = 'genero';
-    const textoGenero = siguiente(PREGUNTA_GENERO, 'genero').replace('{nombre}', nombreUsuario);
-    mensajeBot(textoGenero);
-    return true;
-  }
-  if (etapaInicio === 'genero') {
-    const t = texto.toLowerCase();
-    if (t.includes('masculino') || t.includes('hombre')) generoUsuario = 'masculino';
-    else if (t.includes('femenino') || t.includes('mujer')) generoUsuario = 'femenino';
-    else if (t.includes('otro')) generoUsuario = 'otro';
-    else generoUsuario = 'no decir';
-
     etapaInicio = 'listo';
     const textoFinal = siguiente(BIENVENIDA_FINAL, 'final').replace('{nombre}', nombreUsuario);
     mensajeBot(textoFinal);
@@ -107,19 +94,8 @@ function procesarInicio(texto) {
   return false;
 }
 
-function aplicarGenero(texto) {
-  if (generoUsuario === 'masculino') {
-    return texto.replace(/\bsola\b/g, 'solo').replace(/\bbienvenida\b/g, 'bienvenido');
-  }
-  if (generoUsuario === 'femenino') {
-    return texto.replace(/\bsolo\b/g, 'sola').replace(/\bbienvenido\b/g, 'bienvenida');
-  }
-  return texto;
-}
-
 function personalizar(texto) {
-  let t = texto.replace('{nombre}', nombreUsuario || '');
-  return aplicarGenero(t);
+  return texto.replace('{nombre}', nombreUsuario || '');
 }
 
 function mostrarEscribiendo() {
@@ -220,7 +196,6 @@ function cargarVocesInicial() {
 function iniciar() {
   etapaInicio = 'nombre';
   nombreUsuario = '';
-  generoUsuario = '';
   chat.replaceChildren();
   const bienvenida = el('div', 'msg bot');
   bienvenida.style.setProperty('--c', '#2f6f62');
