@@ -7,7 +7,21 @@ const ALMA = {
   descripcion: 'Cálida, serena y cercana. Te escucha sin juzgar.'
 };
 
-// Saludos según la hora del día
+// Flujo de bienvenida
+const BIENVENIDA_INICIAL = 'Hola. Soy Lorena, tu acompañante. Antes de empezar, ¿cómo te llamas?';
+
+const PREGUNTA_GENERO = [
+  'Gracias, {nombre}. ¿Cómo te gustaría que me dirija a ti? Puedes decirme: masculino, femenino, otro o prefiero no decirlo.',
+  'Mucho gusto, {nombre}. Dime, ¿cómo te identificas en cuanto al género? Masculino, femenino, otro o no decirlo.'
+];
+
+const BIENVENIDA_FINAL = [
+  'Mucho gusto, {nombre}. Estoy aquí para escucharte sin juzgar. ¿Cómo te sientes hoy?',
+  'Encantada de conocerte, {nombre}. Vamos a conversar con calma. ¿Cómo te sientes ahora?',
+  'Hola {nombre}. Gracias por estar aquí. ¿Cómo estás hoy?'
+];
+
+// Saludos según la hora (solo si se necesita por separado)
 const SALUDOS_POR_HORA = {
   mañana: [
     'Buenos días. ¿Cómo amaneciste?',
@@ -51,8 +65,6 @@ const EMPATIA = [
 ];
 
 // --- Respuestas conversacionales por intención ---
-// La idea es sonar humana: frases cortas, cálidas y conectadas con lo que dice la persona.
-
 const RESPUESTAS = {
   crisis: [
     'Lo que me cuentas es importante y merece apoyo ahora mismo. Si estás pensando en hacerte daño, busca ayuda hoy: toca el botón de ayuda o llama a una línea de emergencia. No tienes que pasar esto a solas.',
@@ -60,15 +72,15 @@ const RESPUESTAS = {
   ],
 
   despedida: [
-    'Gracias por estar aquí hoy. Cuídate mucho, ¿sí? Aquí estaré cuando quieras volver.',
-    'Me alegró acompañarte. Ve con calma. Aquí sigo cuando me necesites.',
-    'Un abrazo. Descansa si puedes. Aquí estaré mañana también.',
-    'Cuídate. No tienes que poder con todo hoy. Aquí estaré.'
+    'Gracias por estar aquí hoy, {nombre}. Cuídate mucho, ¿sí? Aquí estaré cuando quieras volver.',
+    'Me alegró acompañarte, {nombre}. Ve con calma. Aquí sigo cuando me necesites.',
+    'Un abrazo, {nombre}. Descansa si puedes. Aquí estaré mañana también.',
+    'Cuídate, {nombre}. No tienes que poder con todo hoy. Aquí estaré.'
   ],
 
   gracias: [
-    'De nada, de verdad. Me alegra que estés aquí.',
-    'Gracias a ti por abrirte. Eso también es valentía.',
+    'De nada, de verdad, {nombre}. Me alegra que estés aquí.',
+    'Gracias a ti por abrirte, {nombre}. Eso también es valentía.',
     'No hay de qué. Aquí estoy para acompañarte.',
     'Me alegra poder estar. ¿Cómo te sientes ahora?',
     'Gracias por confiarme lo que sientes.'
@@ -87,8 +99,8 @@ const RESPUESTAS = {
   ],
 
   mejora: [
-    'Me alegra leer eso. Aunque sea un poquito, cuenta.',
-    'Qué bueno. Guarda ese respiro, te lo ganaste.',
+    'Me alegra leer eso, {nombre}. Aunque sea un poquito, cuenta.',
+    'Qué bueno, {nombre}. Guarda ese respiro, te lo ganaste.',
     'Me alegra. ¿Qué crees que te ayudó a sentirte así?',
     'Eso suena como un alivio. Déjate sentir esta pausa.',
     'Me alegra mucho. Sin prisa, pero vale la pena notar lo que sí está mejor.'

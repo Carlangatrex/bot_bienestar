@@ -16,6 +16,11 @@ let hablando = false;
 let ultimaRespuesta = '';
 let respuestaPendiente = 0;
 
+/* Flujo de bienvenida */
+let etapaInicio = 'inicial'; // 'inicial' | 'nombre' | 'genero' | 'listo'
+let nombreUsuario = '';
+let generoUsuario = ''; // 'masculino' | 'femenino' | 'otro' | 'no decir'
+
 function el(tag, cls, text) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -56,13 +61,14 @@ function responder(textoUsuario = '') {
   }
   const respuesta = siguiente(opciones, 'intent-' + intencion);
   ultimaRespuesta = respuesta;
+  const textoFinal = personalizar(respuesta);
 
   const id = ++respuestaPendiente;
 
   if (intencion === 'crisis') {
     quitarEscribiendo();
     estado.textContent = 'Activa ahora';
-    mensajeBot(respuesta);
+    mensajeBot(textoFinal);
     return;
   }
 
@@ -74,8 +80,54 @@ function responder(textoUsuario = '') {
     if (id !== respuestaPendiente) return;
     quitarEscribiendo();
     estado.textContent = 'Activa ahora';
-    mensajeBot(respuesta);
+    mensajeBot(textoFinal);
   }, espera);
+}
+
+function procesarInicio(texto) {
+  if (etapaInicio === 'nombre') {
+    nombreUsuario = texto.trim() || 'amigo';
+    etapaInicio = 'genero';
+    const textoGenero = siguiente(PREGUNTA_GENERO, 'genero').replace('{nombre}', nombreUsuario);
+    mensajeBot(textoGenero);
+    return true;
+  }
+  if (etapaInicio === 'genero') {
+    const t = texto.toLowerCase();
+    if (t.includes('masculino') || t.includes('hombre')) generoUsuario = 'masculino';
+    else if (t.includes('femenino') || t.includes('mujer')) generoUsuario = 'femenino';
+    else if (t.includes('otro')) generoUsuario = 'otro';
+    else generoUsuario = 'no decir';
+
+    etapaInicio = 'listo';
+    const textoFinal = siguiente(BIENVENIDA_FINAL, 'final').replace('{nombre}', nombreUsuario);
+    mensajeBot(textoFinal);
+    return true;
+  }
+  return false;
+}
+
+function aplicarGenero(texto) {
+  if (generoUsuario === 'masculino') {
+    return texto.replace(/\bsola\b/g, 'solo').replace(/\bbienvenida\b/g, 'bienvenido');
+  }
+  if (generoUsuario === 'femenino') {
+    return texto.replace(/\bsolo\b/g, 'sola').replace(/\bbienvenido\b/g, 'bienvenida');
+  }
+  return texto;
+}
+
+function personalizar(texto) {
+  let t = texto.replace('{nombre}', nombreUsuario || '');
+  return aplicarGenero(t);
+}
+  quitarEscribiendo();
+  const t = el('div', 'msg bot typing');
+  t.id = 'typing';
+  t.setAttribute('aria-label', 'Lorena está escribiendo');
+  t.append(document.createElement('span'), document.createElement('span'), document.createElement('span'));
+  chat.appendChild(t);
+  scroll();
 }
 
 function mostrarEscribiendo() {
@@ -174,20 +226,17 @@ function cargarVocesInicial() {
 }
 
 function iniciar() {
-  const h = new Date().getHours();
-  let periodo = 'tarde';
-  if (h < 12) periodo = 'mañana';
-  else if (h >= 20) periodo = 'noche';
-  const saludo = siguiente(SALUDOS_POR_HORA[periodo], 'saludo-hora');
+  etapaInicio = 'nombre';
+  nombreUsuario = '';
+  generoUsuario = '';
   chat.replaceChildren();
   const bienvenida = el('div', 'msg bot');
   bienvenida.style.setProperty('--c', '#2f6f62');
-  bienvenida.append(el('div', '', `${saludo} Soy Lorena. Estoy aquí contigo. ¿Cómo te sientes hoy?`));
+  bienvenida.append(el('div', '', BIENVENIDA_INICIAL));
   chat.appendChild(bienvenida);
   scroll();
   input.focus();
   // No auto-play: el navegador bloquea audio sin interacción del usuario
-  // El usuario puede usar el botón 🔊 para escuchar el mensaje
 }
 
 function iniciarReconocimiento() {
@@ -212,7 +261,11 @@ function iniciarReconocimiento() {
     const texto = e.results[0][0].transcript.trim();
     if (texto) {
       mensajeUsuario(texto);
-      responder(texto);
+      if (etapaInicio !== 'listo') {
+        procesarInicio(texto);
+      } else {
+        responder(texto);
+      }
     }
   };
 
@@ -242,7 +295,11 @@ function enviarMensaje() {
   if (!texto) return;
   mensajeUsuario(texto);
   input.value = '';
-  responder(texto);
+  if (etapaInicio !== 'listo') {
+    procesarInicio(texto);
+  } else {
+    responder(texto);
+  }
 }
 
 function enviarMensajeVoz() {
