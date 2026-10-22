@@ -25,6 +25,7 @@ let nombreUsuario = '';
 /* Flujo estructurado por pasos */
 let etapaChat = null; // 'paso1' | 'paso2' | 'paso3' | 'paso4' | 'paso5' | null
 let ultimaPreguntaMostrada = '';
+let categoriaActiva = null; // clave de CATEGORIAS o null
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -59,6 +60,14 @@ function siguiente(arr, key) {
 function responder(textoUsuario = '') {
   const intencion = detectarIntencion(textoUsuario);
 
+  // Detectar categoría automáticamente si no hay una activa
+  if (!categoriaActiva) {
+    const catDetectada = detectarCategoria(textoUsuario);
+    if (catDetectada) {
+      categoriaActiva = catDetectada;
+    }
+  }
+
   // Crisis siempre tiene prioridad, en cualquier paso
   if (intencion === 'crisis') {
     const banco = RESPUESTAS.crisis;
@@ -77,15 +86,58 @@ function responder(textoUsuario = '') {
   }
 
   // Si el chat ya cerró, no responder
-  if (chatCerrado || etapaChat === null) return;
+  if (chatCerrado) return;
 
-  // Avanzar al siguiente paso estructurado
+  // Si hay categoría activa, usar sus preguntas en orden
+  if (categoriaActiva) {
+    const cat = CATEGORIAS[categoriaActiva];
+    const total = cat.preguntas.length;
+    if (!etapaChat) etapaChat = 'cat1';
+
+    const pasoNum = parseInt(etapaChat.replace('cat', ''), 10);
+    const siguienteNum = pasoNum + 1;
+
+    if (siguienteNum > total) {
+      // Terminó todas las preguntas de la categoría: cerrar
+      quitarEscribiendo();
+      mensajeBot(MENSAJE_FINAL);
+      cerrarChat();
+      return;
+    }
+
+    etapaChat = 'cat' + siguienteNum;
+    const banco = cat.preguntas;
+    let opciones = banco;
+    if (opciones.length > 1 && ultimaPreguntaMostrada) {
+      const sinRepetir = opciones.filter(r => r !== ultimaPreguntaMostrada);
+      if (sinRepetir.length) opciones = sinRepetir;
+    }
+    const pregunta = siguiente(opciones, 'cat-' + categoriaActiva + '-' + siguienteNum);
+    ultimaPreguntaMostrada = pregunta;
+    const textoFinal = personalizar(pregunta);
+
+    const id = ++respuestaPendiente;
+    mostrarEscribiendo();
+    estado.textContent = 'escribiendo...';
+
+    const espera = 550 + Math.random() * 650;
+    setTimeout(() => {
+      if (id !== respuestaPendiente) return;
+      quitarEscribiendo();
+      estado.textContent = 'Activa ahora';
+      mensajeBot(textoFinal);
+    }, espera);
+    return;
+  }
+
+  // Flujo genérico de 5 pasos (sin categoría seleccionada)
+  if (etapaChat === null) return;
+
   const ordenPasos = ['paso1', 'paso2', 'paso3', 'paso4', 'paso5'];
   const indiceActual = ordenPasos.indexOf(etapaChat);
   const siguienteIndice = indiceActual + 1;
 
   if (siguienteIndice >= ordenPasos.length) {
-    // Llegó al final del paso 5: cerrar con mensaje final
     quitarEscribiendo();
     mensajeBot(MENSAJE_FINAL);
     cerrarChat();
@@ -141,10 +193,8 @@ function procesarInicio(texto) {
     etapaInicio = 'listo';
     const textoFinal = siguiente(BIENVENIDA_FINAL, 'final').replace('{nombre}', nombreUsuario);
     mensajeBot(textoFinal);
-    etapaChat = 'paso1';
     setTimeout(() => {
-      const pregunta = siguientePregunta(PREGUNTAS_PASO_1, 'paso1');
-      mensajeBot(pregunta);
+      mostrarCategorias();
     }, 900);
     return true;
   }
@@ -153,6 +203,46 @@ function procesarInicio(texto) {
 
 function personalizar(texto) {
   return texto.replace('{nombre}', nombreUsuario || '');
+}
+
+function mostrarCategorias() {
+  const contenedor = el('div', 'categorias');
+  contenedor.style.display = 'flex';
+  contenedor.style.flexDirection = 'column';
+  contenedor.style.gap = '7px';
+  contenedor.style.margin = '10px 0';
+
+  const titulo = el('div', '', '¿Te gustaría elegir un tema para conversar? (o escribe libremente)');
+  titulo.style.fontSize = '13px';
+  titulo.style.color = 'var(--muted)';
+  titulo.style.marginBottom = '6px';
+  contenedor.appendChild(titulo);
+
+  for (const [key, cat] of Object.entries(CATEGORIAS)) {
+    const btn = el('button', 'btn-categoria', cat.label);
+    btn.type = 'button';
+    btn.dataset.cat = key;
+    btn.onclick = () => {
+      categoriaActiva = key;
+      etapaChat = 'cat0';
+      contenedor.remove();
+      responder('');
+    };
+    contenedor.appendChild(btn);
+  }
+
+  const btnGeneral = el('button', 'btn-categoria', 'Conversar libremente (sin tema)');
+  btnGeneral.type = 'button';
+  btnGeneral.onclick = () => {
+    contenedor.remove();
+    etapaChat = 'paso1';
+    const pregunta = siguientePregunta(PREGUNTAS_PASO_1, 'paso1');
+    mensajeBot(pregunta);
+  };
+  contenedor.appendChild(btnGeneral);
+
+  chat.appendChild(contenedor);
+  scroll();
 }
 
 function cerrarChat() {
@@ -252,8 +342,16 @@ function hablar(texto) {
 
   if (vozSeleccionada) utterance.voice = vozSeleccionada;
 
-  utterance.onstart = () => { hablando = true; };
-  utterance.onend = () => { hablando = false; };
+  utterance.onstart = () => {
+    hablando = true;
+    speaker.classList.remove('mutado');
+    speaker.classList.add('sonando');
+  };
+  utterance.onend = () => {
+    hablando = false;
+    speaker.classList.remove('sonando');
+    speaker.classList.add('mutado');
+  };
   síntesis.speak(utterance);
 }
 
@@ -369,10 +467,20 @@ enviar.addEventListener('click', enviarMensaje);
 input.addEventListener('keydown', e => { if (e.key === 'Enter') enviarMensaje(); });
 mic.addEventListener('click', enviarMensajeVoz);
 document.getElementById('speaker').addEventListener('click', () => {
+  if (hablando) {
+    síntesis.cancel();
+    hablando = false;
+    speaker.classList.remove('sonando');
+    speaker.classList.add('mutado');
+    return;
+  }
   const ultimos = chat.querySelectorAll('.msg.bot');
   if (ultimos.length > 0) {
     const ultimo = ultimos[ultimos.length - 1].textContent.trim();
-    if (ultimo) hablar(ultimo);
+    if (ultimo) {
+      speaker.classList.remove('mutado');
+      hablar(ultimo);
+    }
   }
 });
 

@@ -150,6 +150,8 @@
   }
   .icon-btn:active { opacity: .6; }
   .icon-btn.escuchando { background: var(--danger); color: #fff; animation: pulse 1s infinite; }
+  .icon-btn.sonando { background: var(--bubble-out); color: #fff; animation: pulse 1s infinite; }
+  .icon-btn.mutado { opacity: .5; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
 
   /* Botón enviar azul */
@@ -174,6 +176,22 @@
     width: auto;
   }
   .btn-reiniciar:active { opacity: .7; }
+
+  /* Botones de categoría */
+  .categorias { margin: 12px 0; }
+  .categorias > div:first-child { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .btn-categoria {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--input-bg);
+    color: var(--text);
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .btn-categoria:active { opacity: .7; background: var(--line); }
 
   /* Diálogo de ayuda */
   dialog { background: var(--bar); color: var(--text); border: 0; border-radius: 18px; width: min(420px, 92vw); padding: 22px; }
