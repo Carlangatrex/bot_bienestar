@@ -252,8 +252,12 @@ function iniciarReconocimiento() {
       interaccionesChat++;
       if (interaccionesChat >= 7) {
         quitarEscribiendo();
-        mensajeBot(MENSAJE_FINAL);
-        cerrarChat();
+        const despedida = siguiente(CIERRE, 'cierre').replace('{nombre}', nombreUsuario || '');
+        mensajeBot(despedida);
+        setTimeout(() => {
+          mensajeBot(MENSAJE_FINAL);
+          cerrarChat();
+        }, 1200);
         return;
       }
       responder(texto);
@@ -294,8 +298,12 @@ function enviarMensaje() {
   interaccionesChat++;
   if (interaccionesChat >= 7) {
     quitarEscribiendo();
-    mensajeBot(MENSAJE_FINAL);
-    cerrarChat();
+    const despedida = siguiente(CIERRE, 'cierre').replace('{nombre}', nombreUsuario || '');
+    mensajeBot(despedida);
+    setTimeout(() => {
+      mensajeBot(MENSAJE_FINAL);
+      cerrarChat();
+    }, 1200);
     return;
   }
   responder(texto);

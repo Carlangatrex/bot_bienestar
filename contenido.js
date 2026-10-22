@@ -139,7 +139,11 @@ const RESPUESTAS = {
     'Gracias por compartirlo. ¿Cómo te sientes después de decirlo?',
     'No tienes que tenerlo todo claro. ¿Qué necesitas ahora?',
     'Estoy contigo. ¿Quieres desahogarte o que pensemos juntas en un paso pequeño?',
-    'Lo que sea que traigas, tiene espacio aquí.'
+    'Lo que sea que traigas, tiene espacio aquí.',
+    '¿Hay algo en particular que te esté pesando hoy?',
+    'Tómate tu tiempo. No hay prisa por responder nada.',
+    'A veces solo nombrarlo ya ayuda un poco. ¿Qué te viene a la mente?',
+    'Estoy aquí, sin juzgar. ¿Qué quieres contarme?'
   ]
 };
 
@@ -192,7 +196,14 @@ const DESPEDIDAS = [
   'Gracias por confiar. Aquí estoy cuando me necesites.'
 ];
 
-const MENSAJE_FINAL = 'Gracias por confiar. Recuerda: no tienes que pasar esto solo. Aquí estoy cuando me necesites.';
+const MENSAJE_FINAL = 'Gracias por confiar en mí. No tienes que cargar esto por tu cuenta: aquí estoy cuando quieras volver. Cuídate.';
+
+// Mensajes de cierre cálidos (se muestran justo antes del mensaje final)
+const CIERRE = [
+  'Gracias por hablar conmigo, {nombre}. Me alegra que hayas estado aquí.',
+  'Gracias por confiarme lo que sientes, {nombre}. Descansa si lo necesitas.',
+  'Un abrazo, {nombre}. Aquí estaré cuando quieras conversar de nuevo.'
+];
 
 // Líneas de ayuda verificadas. Para agregar un país, copia un bloque y confirma el número en una fuente oficial.
 const AYUDA = [
