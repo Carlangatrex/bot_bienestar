@@ -174,10 +174,15 @@ function cargarVocesInicial() {
 }
 
 function iniciar() {
+  const h = new Date().getHours();
+  let periodo = 'tarde';
+  if (h < 12) periodo = 'mañana';
+  else if (h < 20) periodo = 'noche';
+  const saludo = siguiente(SALUDOS_POR_HORA[periodo], 'saludo-hora');
   chat.replaceChildren();
   const bienvenida = el('div', 'msg bot');
   bienvenida.style.setProperty('--c', '#2f6f62');
-  bienvenida.append(el('div', '', 'Hola, soy Lorena. Estoy aquí contigo. ¿Cómo te sientes hoy?'));
+  bienvenida.append(el('div', '', `${saludo} Soy Lorena. Estoy aquí contigo. ¿Cómo te sientes hoy?`));
   chat.appendChild(bienvenida);
   scroll();
   input.focus();

@@ -1,13 +1,32 @@
 // Acompañante fija: Lorena
 const ALMA = {
-  id: 'alma',
+  id: 'lorena',
   label: 'Lorena',
   emoji: '🌿',
   color: '#2f6f62',
   descripcion: 'Cálida, serena y cercana. Te escucha sin juzgar.'
 };
 
-// FRASES DE EMPATÍA (cálidas, naturales, sin "sé que te sientes...")
+// Saludos según la hora del día
+const SALUDOS_POR_HORA = {
+  mañana: [
+    'Buenos días. ¿Cómo amaneciste?',
+    'Buenos días. ¿Cómo te sientes al empezar el día?',
+    'Buenos días. Qué bueno tenerte aquí esta mañana.'
+  ],
+  tarde: [
+    'Buenas tardes. ¿Cómo va tu día?',
+    'Buenas tardes. ¿Cómo te sientes ahora?',
+    'Buenas tardes. Aquí estoy si quieres contarme algo.'
+  ],
+  noche: [
+    'Buenas noches. ¿Cómo cerró tu día?',
+    'Buenas noches. ¿Cómo te sientes antes de descansar?',
+    'Buenas noches. Cuéntame si quieres desahogarte un poco.'
+  ]
+};
+
+// FRASES DE EMPATÍA (cálidas, naturales, sin clichés de terapeuta)
 const EMPATIA = [
   'Te escucho.',
   'Aquí estoy.',
@@ -31,26 +50,8 @@ const EMPATIA = [
   'Respira. Estoy aquí.'
 ];
 
-const NO_ENTIENDO = [
-  'Cuéntamelo con tus palabras.',
-  '¿Cómo te sientes ahora?',
-  'Estoy escuchando.',
-  'Cuéntame más.',
-  'Te escucho.'
-];
-
-const DESPEDIDAS = [
-  'Gracias por compartir. Aquí estaré cuando me necesites.',
-  'Cuídate. Te mereces ternura.',
-  'Un paso a la vez. Vuelvo cuando quieras.',
-  'La tormenta pasa. Aquí sigo.',
-  'Gracias por confiar. Aquí estoy cuando me necesites.'
-];
-
-const MENSAJE_FINAL = 'Gracias por confiar. Recuerda: no tienes que pasar esto solo. Aquí estoy cuando me necesites.';
-
 // --- Respuestas conversacionales por intención ---
-// La idea es sonar humana: frases cortas, cálidas y conectadas con lo que la persona dice.
+// La idea es sonar humana: frases cortas, cálidas y conectadas con lo que dice la persona.
 
 const RESPUESTAS = {
   crisis: [
@@ -168,6 +169,23 @@ function detectarIntencion(texto) {
   return 'default';
 }
 
+const NO_ENTIENDO = [
+  'Cuéntamelo con tus palabras.',
+  '¿Cómo te sientes ahora?',
+  'Estoy escuchando.',
+  'Cuéntame más.',
+  'Te escucho.'
+];
+
+const DESPEDIDAS = [
+  'Gracias por compartir. Aquí estaré cuando me necesites.',
+  'Cuídate. Te mereces ternura.',
+  'Un paso a la vez. Vuelvo cuando quieras.',
+  'La tormenta pasa. Aquí sigo.',
+  'Gracias por confiar. Aquí estoy cuando me necesites.'
+];
+
+const MENSAJE_FINAL = 'Gracias por confiar. Recuerda: no tienes que pasar esto solo. Aquí estoy cuando me necesites.';
 
 // Líneas de ayuda verificadas. Para agregar un país, copia un bloque y confirma el número en una fuente oficial.
 const AYUDA = [
