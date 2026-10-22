@@ -205,6 +205,42 @@ const CIERRE = [
   'Un abrazo, {nombre}. Aquí estaré cuando quieras conversar de nuevo.'
 ];
 
+// Bloques de preguntas estructuradas por pasos del acompañamiento
+const PREGUNTAS_PASO_1 = [
+  '¿Cómo se siente tu día en este preciso instante?',
+  'Este es tu espacio para soltar. ¿Qué es lo que más ha estado ocupando tu mente hoy?',
+  'Si tuvieras que describir cómo te sientes hoy con una sola palabra o frase, ¿cuál sería?',
+  'De todo lo que traes encima hoy, ¿por dónde te gustaría empezar a desahogarte?'
+];
+
+const PREGUNTAS_PASO_2 = [
+  'Te leo. De todo esto que acabas de escribir, ¿qué es lo que sientes que te pesa más?',
+  '¿Sientes que esta situación te está generando más cansancio mental o tensión en el cuerpo?',
+  '¿Esto que cuentas es algo que surgió hoy o es algo que llevas guardando desde hace tiempo?',
+  'Al leer tu propio mensaje, ¿qué emoción dirías que está más presente: frustración, miedo, tristeza o agotamiento?'
+];
+
+const PREGUNTAS_PASO_3 = [
+  'De todo este panorama, ¿qué parte está realmente bajo tu control cambiar hoy y qué parte no depende de ti?',
+  '¿Estás buscando ahora mismo desahogarte y soltar la carga, o necesitas encontrar un paso práctico?',
+  '¿Qué le dirías a un buen amigo si estuviera pasando exactamente por esta misma situación?',
+  'Si miras esto a una distancia de una semana o un mes, ¿qué tan grave o permanente se siente?'
+];
+
+const PREGUNTAS_PASO_4 = [
+  'Haz una pausa un segundo: ¿notas alguna tensión en este momento en los hombros, el cuello o el estómago?',
+  '¿Qué te ha servido en otros momentos difíciles para recuperar un poco la calma?',
+  '¿Sientes que tienes a alguien cercano con quien compartir esto fuera de esta pantalla?',
+  '¿Cuándo fue la última vez en el día que te detuviste a respirar o a tomar agua con calma?'
+];
+
+const PREGUNTAS_PASO_5 = [
+  'Para cerrar este espacio por hoy: ¿cuál sería una acción muy pequeña que podrías hacer en las próximas horas para cuidarte?',
+  'Si pudieras regalarte algo sencillo antes de terminar el día (descansar, caminar, desconectar el teléfono), ¿qué elegirías?',
+  '¿Qué palabra o compromiso contigo mismo te gustaría que guardemos hoy en tu historial?',
+  'De todo lo que hablamos, ¿con qué idea o sensación te gustaría quedarte para el resto de la jornada?'
+];
+
 // Líneas de ayuda verificadas. Para agregar un país, copia un bloque y confirma el número en una fuente oficial.
 const AYUDA = [
   { pais: 'México', lineas: [['Línea de la Vida (24 h, gratuita)', '800 911 2000'], ['Emergencias', '911']] },

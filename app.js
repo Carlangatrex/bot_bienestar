@@ -22,6 +22,10 @@ let chatCerrado = false;
 let etapaInicio = 'inicial'; // 'inicial' | 'nombre' | 'listo'
 let nombreUsuario = '';
 
+/* Flujo estructurado por pasos */
+let etapaChat = null; // 'paso1' | 'paso2' | 'paso3' | 'paso4' | 'paso5' | null
+let ultimaPreguntaMostrada = '';
+
 function el(tag, cls, text) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -54,25 +58,62 @@ function siguiente(arr, key) {
 
 function responder(textoUsuario = '') {
   const intencion = detectarIntencion(textoUsuario);
-  const banco = RESPUESTAS[intencion] || RESPUESTAS.default;
-  let opciones = banco;
-  if (opciones.length > 1 && ultimaRespuesta) {
-    const sinRepetir = opciones.filter(r => r !== ultimaRespuesta);
-    if (sinRepetir.length) opciones = sinRepetir;
-  }
-  const respuesta = siguiente(opciones, 'intent-' + intencion);
-  ultimaRespuesta = respuesta;
-  const textoFinal = personalizar(respuesta);
 
-  const id = ++respuestaPendiente;
-
+  // Crisis siempre tiene prioridad, en cualquier paso
   if (intencion === 'crisis') {
+    const banco = RESPUESTAS.crisis;
+    let opciones = banco;
+    if (opciones.length > 1 && ultimaRespuesta) {
+      const sinRepetir = opciones.filter(r => r !== ultimaRespuesta);
+      if (sinRepetir.length) opciones = sinRepetir;
+    }
+    const respuesta = siguiente(opciones, 'intent-crisis');
+    ultimaRespuesta = respuesta;
+    const textoFinal = personalizar(respuesta);
     quitarEscribiendo();
     estado.textContent = 'Activa ahora';
     mensajeBot(textoFinal);
     return;
   }
 
+  // Si el chat ya cerró, no responder
+  if (chatCerrado || etapaChat === null) return;
+
+  // Avanzar al siguiente paso estructurado
+  const ordenPasos = ['paso1', 'paso2', 'paso3', 'paso4', 'paso5'];
+  const indiceActual = ordenPasos.indexOf(etapaChat);
+  const siguienteIndice = indiceActual + 1;
+
+  if (siguienteIndice >= ordenPasos.length) {
+    // Llegó al final del paso 5: cerrar con mensaje final
+    quitarEscribiendo();
+    mensajeBot(MENSAJE_FINAL);
+    cerrarChat();
+    return;
+  }
+
+  const siguientePaso = ordenPasos[siguienteIndice];
+  etapaChat = siguientePaso;
+
+  const bloques = {
+    paso1: PREGUNTAS_PASO_1,
+    paso2: PREGUNTAS_PASO_2,
+    paso3: PREGUNTAS_PASO_3,
+    paso4: PREGUNTAS_PASO_4,
+    paso5: PREGUNTAS_PASO_5
+  };
+
+  const banco = bloques[siguientePaso];
+  let opciones = banco;
+  if (opciones.length > 1 && ultimaPreguntaMostrada) {
+    const sinRepetir = opciones.filter(r => r !== ultimaPreguntaMostrada);
+    if (sinRepetir.length) opciones = sinRepetir;
+  }
+  const pregunta = siguiente(opciones, 'pregunta-' + siguientePaso);
+  ultimaPreguntaMostrada = pregunta;
+  const textoFinal = personalizar(pregunta);
+
+  const id = ++respuestaPendiente;
   mostrarEscribiendo();
   estado.textContent = 'escribiendo...';
 
@@ -85,12 +126,26 @@ function responder(textoUsuario = '') {
   }, espera);
 }
 
+function siguientePregunta(bloque, clave) {
+  let opciones = bloque;
+  if (opciones.length > 1 && ultimaPreguntaMostrada) {
+    const sinRepetir = opciones.filter(r => r !== ultimaPreguntaMostrada);
+    if (sinRepetir.length) opciones = sinRepetir;
+  }
+  return siguiente(opciones, clave);
+}
+
 function procesarInicio(texto) {
   if (etapaInicio === 'nombre') {
     nombreUsuario = texto.trim() || 'amigo';
     etapaInicio = 'listo';
     const textoFinal = siguiente(BIENVENIDA_FINAL, 'final').replace('{nombre}', nombreUsuario);
     mensajeBot(textoFinal);
+    etapaChat = 'paso1';
+    setTimeout(() => {
+      const pregunta = siguientePregunta(PREGUNTAS_PASO_1, 'paso1');
+      mensajeBot(pregunta);
+    }, 900);
     return true;
   }
   return false;
@@ -249,17 +304,6 @@ function iniciarReconocimiento() {
         procesarInicio(texto);
         return;
       }
-      interaccionesChat++;
-      if (interaccionesChat >= 7) {
-        quitarEscribiendo();
-        const despedida = siguiente(CIERRE, 'cierre').replace('{nombre}', nombreUsuario || '');
-        mensajeBot(despedida);
-        setTimeout(() => {
-          mensajeBot(MENSAJE_FINAL);
-          cerrarChat();
-        }, 1200);
-        return;
-      }
       responder(texto);
     }
   };
@@ -293,17 +337,6 @@ function enviarMensaje() {
   input.value = '';
   if (etapaInicio !== 'listo') {
     procesarInicio(texto);
-    return;
-  }
-  interaccionesChat++;
-  if (interaccionesChat >= 7) {
-    quitarEscribiendo();
-    const despedida = siguiente(CIERRE, 'cierre').replace('{nombre}', nombreUsuario || '');
-    mensajeBot(despedida);
-    setTimeout(() => {
-      mensajeBot(MENSAJE_FINAL);
-      cerrarChat();
-    }, 1200);
     return;
   }
   responder(texto);
