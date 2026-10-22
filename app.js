@@ -87,7 +87,7 @@ function responder(textoUsuario = '') {
   if (siguienteIndice >= ordenPasos.length) {
     // Llegó al final del paso 5: cerrar con mensaje final
     quitarEscribiendo();
-    mensajeBot(MENSAJE_FINAL);
+    mensajeBot(siguiente(MENSAJE_FINAL, 'mensaje-final'));
     cerrarChat();
     return;
   }

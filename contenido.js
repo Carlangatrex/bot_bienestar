@@ -196,7 +196,11 @@ const DESPEDIDAS = [
   'Gracias por confiar. Aquí estoy cuando me necesites.'
 ];
 
-const MENSAJE_FINAL = 'Gracias por confiar en mí. No tienes que cargar esto por tu cuenta: aquí estoy cuando quieras volver. Cuídate.';
+const MENSAJE_FINAL = [
+  'Gracias por confiar en mí. Recuerda: no tienes que cargar esto sola. Mereces paz, descanso y ternura. Aquí estaré cuando quieras volver.',
+  'Gracias por estar aquí hoy. Cada día es una nueva oportunidad para ser amable contigo misma. Respira, confía en tu proceso y sabe que hay luz incluso en los momentos más oscuros.',
+  'Gracias por compartir lo que sientes. No estás sola en este camino. Tómate tu tiempo, date permiso para sanar y recuerda que mereces cuidado y calma.'
+];
 
 // Mensajes de cierre cálidos (se muestran justo antes del mensaje final)
 const CIERRE = [
