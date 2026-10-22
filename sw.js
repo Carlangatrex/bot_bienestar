@@ -1,4 +1,4 @@
-const CACHE = 'acompanante-simple-v8';
+const CACHE = 'acompanante-simple-v9';
 const SHELL = ['./', 'index.html', 'app.js', 'contenido.js', 'manifest.json'];
 
 self.addEventListener('install', (e) => {

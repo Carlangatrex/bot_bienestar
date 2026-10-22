@@ -15,6 +15,8 @@ let vozSeleccionada = null;
 let hablando = false;
 let ultimaRespuesta = '';
 let respuestaPendiente = 0;
+let interaccionesChat = 0;
+let chatCerrado = false;
 
 /* Flujo de bienvenida */
 let etapaInicio = 'inicial'; // 'inicial' | 'nombre' | 'listo'
@@ -96,6 +98,20 @@ function procesarInicio(texto) {
 
 function personalizar(texto) {
   return texto.replace('{nombre}', nombreUsuario || '');
+}
+
+function cerrarChat() {
+  chatCerrado = true;
+  input.disabled = true;
+  input.placeholder = 'Conversación finalizada';
+  enviar.style.display = 'none';
+  mic.style.display = 'none';
+  speaker.style.display = 'none';
+  const btn = el('button', 'btn-reiniciar', 'Reiniciar conversación');
+  btn.type = 'button';
+  btn.onclick = () => location.reload();
+  const area = document.getElementById('input-area');
+  area.appendChild(btn);
 }
 
 function mostrarEscribiendo() {
@@ -228,11 +244,19 @@ function iniciarReconocimiento() {
     const texto = e.results[0][0].transcript.trim();
     if (texto) {
       mensajeUsuario(texto);
+      if (chatCerrado) return;
       if (etapaInicio !== 'listo') {
         procesarInicio(texto);
-      } else {
-        responder(texto);
+        return;
       }
+      interaccionesChat++;
+      if (interaccionesChat >= 7) {
+        quitarEscribiendo();
+        mensajeBot(MENSAJE_FINAL);
+        cerrarChat();
+        return;
+      }
+      responder(texto);
     }
   };
 
@@ -260,13 +284,21 @@ function reproducirUltimo() {
 function enviarMensaje() {
   const texto = input.value.trim();
   if (!texto) return;
+  if (chatCerrado) return;
   mensajeUsuario(texto);
   input.value = '';
   if (etapaInicio !== 'listo') {
     procesarInicio(texto);
-  } else {
-    responder(texto);
+    return;
   }
+  interaccionesChat++;
+  if (interaccionesChat >= 7) {
+    quitarEscribiendo();
+    mensajeBot(MENSAJE_FINAL);
+    cerrarChat();
+    return;
+  }
+  responder(texto);
 }
 
 function enviarMensajeVoz() {
