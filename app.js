@@ -221,28 +221,55 @@ function mostrarCategorias() {
   for (const [key, cat] of Object.entries(CATEGORIAS)) {
     const btn = el('button', 'btn-categoria', cat.label);
     btn.type = 'button';
-    btn.dataset.cat = key;
-    btn.onclick = () => {
+    btn.addEventListener('click', () => {
       categoriaActiva = key;
-      etapaChat = 'cat0';
+      etapaChat = null;
       contenedor.remove();
-      responder('');
-    };
+      ejecutarCategoria(key);
+    });
     contenedor.appendChild(btn);
   }
 
   const btnGeneral = el('button', 'btn-categoria', 'Conversar libremente (sin tema)');
   btnGeneral.type = 'button';
-  btnGeneral.onclick = () => {
-    contenedor.remove();
+  btnGeneral.addEventListener('click', () => {
+    categoriaActiva = null;
     etapaChat = 'paso1';
+    contenedor.remove();
     const pregunta = siguientePregunta(PREGUNTAS_PASO_1, 'paso1');
     mensajeBot(pregunta);
-  };
+  });
   contenedor.appendChild(btnGeneral);
 
   chat.appendChild(contenedor);
   scroll();
+}
+
+function ejecutarCategoria(categoria) {
+  const cat = CATEGORIAS[categoria];
+  const banco = cat.preguntas;
+  let opciones = banco;
+  if (opciones.length > 1 && ultimaPreguntaMostrada) {
+    const sinRepetir = opciones.filter(r => r !== ultimaPreguntaMostrada);
+    if (sinRepetir.length) opciones = sinRepetir;
+  }
+  const pregunta = siguiente(opciones, 'cat-' + categoria);
+  ultimaPreguntaMostrada = pregunta;
+  const textoFinal = personalizar(pregunta);
+
+  etapaChat = 'cat1';
+
+  const id = ++respuestaPendiente;
+  mostrarEscribiendo();
+  estado.textContent = 'escribiendo...';
+
+  const espera = 550 + Math.random() * 650;
+  setTimeout(() => {
+    if (id !== respuestaPendiente) return;
+    quitarEscribiendo();
+    estado.textContent = 'Activa ahora';
+    mensajeBot(textoFinal);
+  }, espera);
 }
 
 function cerrarChat() {
