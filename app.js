@@ -177,7 +177,7 @@ function iniciar() {
   const h = new Date().getHours();
   let periodo = 'tarde';
   if (h < 12) periodo = 'mañana';
-  else if (h < 20) periodo = 'noche';
+  else if (h >= 20) periodo = 'noche';
   const saludo = siguiente(SALUDOS_POR_HORA[periodo], 'saludo-hora');
   chat.replaceChildren();
   const bienvenida = el('div', 'msg bot');
